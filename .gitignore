@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.expo/
+ios/
+android/
+*.tsbuildinfo
+.env
+.env.*
+
+# Spike code (kept locally, not tracked)
+sigpocket-spike/

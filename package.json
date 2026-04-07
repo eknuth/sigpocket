@@ -1,0 +1,13 @@
+{
+  "name": "sigpocket",
+  "private": true,
+  "scripts": {
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "build:mobile": "pnpm --filter @sigpocket/mobile run build"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}
