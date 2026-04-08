@@ -90,7 +90,7 @@ export default function ServicesScreen() {
     refetch,
   } = useQuery({
     queryKey: ["services", activeId],
-    queryFn: () => client!.fetchServices(6),
+    queryFn: () => client!.fetchServices(24),
     enabled: !!client,
     refetchInterval: 30_000,
   });
@@ -162,7 +162,7 @@ export default function ServicesScreen() {
               No services found
             </ThemedText>
             <ThemedText type="caption" style={{ textAlign: "center" }}>
-              No services reported data in the last 6 hours. Check that your applications are
+              No services reported data in the last 24 hours. Check that your applications are
               instrumented and sending traces.
             </ThemedText>
           </View>

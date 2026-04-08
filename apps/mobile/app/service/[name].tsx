@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import type { ServiceItem } from "@sigpocket/shared-types";
 
-import { ChartSkeleton, SparklineChart } from "@/components/sparkline-chart";
+import { ChartSkeleton, LatencyLineChart } from "@/components/latency-line-chart";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Brand, FontSize, Radius, Space } from "@/constants/theme";
@@ -121,8 +121,8 @@ export default function ServiceDetailScreen() {
           </View>
         </View>
 
-        {/* ── Summary metrics ─────────────────── */}
-        {service && <MetricsSummary service={service} />}
+        {/* ── RED metrics (Rate, Errors, Duration) */}
+        {service && <RedMetrics service={service} />}
 
         {/* ── Time range selector ─────────────── */}
         <View style={styles.rangeBar}>
@@ -171,79 +171,82 @@ export default function ServiceDetailScreen() {
             </Pressable>
           </View>
         ) : (
-          <SparklineChart data={chartData ?? []} color={tint} />
+          <LatencyLineChart data={chartData ?? []} color={tint} />
         )}
+
+        {/* ── Secondary metrics ──────────────── */}
+        {service && <SecondaryMetrics service={service} />}
       </ScrollView>
     </ThemedView>
   );
 }
 
-// ── Metrics summary ───────────────────────────────────────────
+// ── RED metrics (primary) ─────────────────────────────────────
 
-function MetricsSummary({ service }: { service: ServiceItem }) {
+function RedMetrics({ service }: { service: ServiceItem }) {
   const surface = useThemeColor({}, "surfaceRaised");
   const border = useThemeColor({}, "borderSubtle");
+  const tint = useThemeColor({}, "tint");
 
   const p99Ms = service.p99 / 1_000_000;
-  const avgMs = service.avgDuration / 1_000_000;
   const errRate = service.numCalls > 0 ? (service.numErrors / service.numCalls) * 100 : 0;
   const rpm = service.callRate * 60;
 
+  const durationColor = p99Ms >= P99_CRIT_MS ? Brand.red400 : p99Ms >= P99_WARN_MS ? Brand.amber500 : tint;
+  const errorColor = errRate >= ERR_RATE_CRIT * 100 ? Brand.red400 : errRate >= ERR_RATE_WARN * 100 ? Brand.amber500 : tint;
+
   return (
-    <View style={[styles.metricsGrid, { backgroundColor: surface, borderColor: border }]}>
-      <MetricTile
-        label="P99 Latency"
-        value={formatLatency(p99Ms)}
-        warn={p99Ms >= P99_WARN_MS}
-        crit={p99Ms >= P99_CRIT_MS}
-      />
-      <MetricTile
-        label="Avg Latency"
-        value={formatLatency(avgMs)}
-      />
-      <MetricTile
-        label="Error Rate"
-        value={`${errRate.toFixed(2)}%`}
-        warn={errRate >= ERR_RATE_WARN * 100}
-        crit={errRate >= ERR_RATE_CRIT * 100}
-      />
-      <MetricTile
-        label="Throughput"
-        value={formatRpm(rpm)}
-      />
-      <MetricTile
-        label="Total Calls"
-        value={formatCount(service.numCalls)}
-      />
-      <MetricTile
-        label="Total Errors"
-        value={formatCount(service.numErrors)}
-        crit={service.numErrors > 0}
-      />
+    <View style={[styles.redSection, { backgroundColor: surface, borderColor: border }]}>
+      <View style={styles.redCard}>
+        <ThemedText type="caption">RATE</ThemedText>
+        <ThemedText type="mono" style={[styles.redValue, { color: tint }]}>
+          {formatRpm(rpm)}
+        </ThemedText>
+        <ThemedText style={styles.redUnit}>{formatCount(service.numCalls)} total</ThemedText>
+      </View>
+      <View style={[styles.redDivider, { backgroundColor: border }]} />
+      <View style={styles.redCard}>
+        <ThemedText type="caption">ERRORS</ThemedText>
+        <ThemedText type="mono" style={[styles.redValue, { color: errorColor }]}>
+          {errRate.toFixed(2)}%
+        </ThemedText>
+        <ThemedText style={styles.redUnit}>{formatCount(service.numErrors)} total</ThemedText>
+      </View>
+      <View style={[styles.redDivider, { backgroundColor: border }]} />
+      <View style={styles.redCard}>
+        <ThemedText type="caption">DURATION</ThemedText>
+        <ThemedText type="mono" style={[styles.redValue, { color: durationColor }]}>
+          {formatLatency(p99Ms)}
+        </ThemedText>
+        <ThemedText style={styles.redUnit}>p99</ThemedText>
+      </View>
     </View>
   );
 }
 
-function MetricTile({
-  label,
-  value,
-  warn,
-  crit,
-}: {
-  label: string;
-  value: string;
-  warn?: boolean;
-  crit?: boolean;
-}) {
-  const defaultColor = useThemeColor({}, "tint");
-  const color = crit ? Brand.red400 : warn ? Brand.amber500 : defaultColor;
+// ── Secondary metrics ─────────────────────────────────────────
+
+function SecondaryMetrics({ service }: { service: ServiceItem }) {
+  const surface = useThemeColor({}, "surfaceRaised");
+  const border = useThemeColor({}, "borderSubtle");
+  const secondaryText = useThemeColor({}, "textSecondary");
+
+  const avgMs = service.avgDuration / 1_000_000;
 
   return (
-    <View style={styles.metricTile}>
-      <ThemedText type="caption">{label}</ThemedText>
-      <ThemedText type="mono" style={{ color, fontSize: FontSize.lg, fontWeight: "700" }}>
-        {value}
-      </ThemedText>
+    <View style={[styles.secondaryRow, { backgroundColor: surface, borderColor: border }]}>
+      <View style={styles.secondaryTile}>
+        <ThemedText type="caption">Avg Latency</ThemedText>
+        <ThemedText type="mono" style={{ color: secondaryText, fontSize: FontSize.base }}>
+          {formatLatency(avgMs)}
+        </ThemedText>
+      </View>
+      <View style={styles.secondaryTile}>
+        <ThemedText type="caption">Throughput</ThemedText>
+        <ThemedText type="mono" style={{ color: secondaryText, fontSize: FontSize.base }}>
+          {formatRpm(service.callRate * 60)}
+        </ThemedText>
+      </View>
     </View>
   );
 }
@@ -288,17 +291,41 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
   },
-  metricsGrid: {
+  redSection: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Space.lg,
+  },
+  redCard: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+  },
+  redValue: {
+    fontSize: FontSize.xxl,
+    fontWeight: "700",
+    lineHeight: FontSize.xxl + 4,
+  },
+  redUnit: {
+    fontSize: FontSize.xs,
+    opacity: 0.5,
+  },
+  redDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    marginHorizontal: Space.sm,
+  },
+  secondaryRow: {
+    flexDirection: "row",
     borderWidth: 1,
     borderRadius: Radius.lg,
     padding: Space.md,
+    gap: Space.md,
   },
-  metricTile: {
-    width: "33.33%",
-    paddingVertical: Space.sm,
-    paddingHorizontal: Space.xs,
+  secondaryTile: {
+    flex: 1,
     gap: 2,
   },
   rangeBar: {
