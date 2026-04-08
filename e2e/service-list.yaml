@@ -1,5 +1,5 @@
 appId: com.eknuth.sigpocket
-name: "Service list - View services from connected instance"
+name: "Service list - View, sort, and navigate services"
 tags:
   - requires-instance
 ---
@@ -7,15 +7,35 @@ tags:
 # Should be on the services tab
 - assertVisible: "Services"
 
-# Wait for services to load (either service cards or empty state)
+# Wait for skeleton to resolve into real data
 - extendedWaitUntil:
     visible: "P99"
     timeout: 15000
 
 # Verify metric labels are present
+- assertVisible: "Err%"
+- assertVisible: "RPM"
 - assertVisible: "Avg"
-- assertVisible: "Rate"
-- assertVisible: "Errors"
+
+# Default sort is by status — verify sort bar is visible
+- assertVisible:
+    id: "sort-status"
+
+# Switch to sort by name
+- tapOn:
+    id: "sort-name"
+
+# Switch to sort by errors
+- tapOn:
+    id: "sort-errors"
+
+# Switch to sort by latency
+- tapOn:
+    id: "sort-latency"
+
+# Switch back to status (default)
+- tapOn:
+    id: "sort-status"
 
 # Tap a service card to navigate to detail
 - tapOn:

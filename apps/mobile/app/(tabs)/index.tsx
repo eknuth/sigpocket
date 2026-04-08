@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
+  Animated,
   FlatList,
   Pressable,
   RefreshControl,
@@ -12,22 +13,73 @@ import type { ServiceItem } from "@sigpocket/shared-types";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { FontSize, Radius, Space } from "@/constants/theme";
+import { Brand, FontSize, Radius, Space } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useSignozClient } from "@/hooks/use-signoz-client";
 import { useInstanceStore } from "@/stores/instance-store";
 
+// ── Status thresholds ─────────────────────────────────────────
 
+type Status = "healthy" | "degraded" | "critical";
+
+const P99_WARN_MS = 500;
+const P99_CRIT_MS = 2000;
+const ERR_RATE_WARN = 0.01; // 1%
+const ERR_RATE_CRIT = 0.05; // 5%
+
+function serviceStatus(item: ServiceItem): Status {
+  const errRate = item.numCalls > 0 ? item.numErrors / item.numCalls : 0;
+  const p99Ms = item.p99 / 1_000_000;
+
+  if (errRate >= ERR_RATE_CRIT || p99Ms >= P99_CRIT_MS) return "critical";
+  if (errRate >= ERR_RATE_WARN || p99Ms >= P99_WARN_MS) return "degraded";
+  return "healthy";
+}
+
+// ── Sort ──────────────────────────────────────────────────────
+
+type SortKey = "status" | "name" | "errors" | "latency";
+
+const SORT_LABELS: Record<SortKey, string> = {
+  status: "Status",
+  name: "A–Z",
+  errors: "Errors",
+  latency: "Latency",
+};
+
+function sortServices(list: ServiceItem[], key: SortKey): ServiceItem[] {
+  const sorted = [...list];
+  switch (key) {
+    case "status": {
+      const order: Record<Status, number> = { critical: 0, degraded: 1, healthy: 2 };
+      return sorted.sort((a, b) => order[serviceStatus(a)] - order[serviceStatus(b)]);
+    }
+    case "name":
+      return sorted.sort((a, b) => a.serviceName.localeCompare(b.serviceName));
+    case "errors": {
+      return sorted.sort((a, b) => {
+        const aRate = a.numCalls > 0 ? a.numErrors / a.numCalls : 0;
+        const bRate = b.numCalls > 0 ? b.numErrors / b.numCalls : 0;
+        return bRate - aRate;
+      });
+    }
+    case "latency":
+      return sorted.sort((a, b) => b.p99 - a.p99);
+  }
+}
+
+// ── Screen ────────────────────────────────────────────────────
 
 export default function ServicesScreen() {
   const router = useRouter();
   const client = useSignozClient();
   const activeId = useInstanceStore((s) => s.activeInstanceId);
   const activeName = useInstanceStore((s) => s.getActive()?.name);
+  const [sortKey, setSortKey] = useState<SortKey>("status");
+
   const tint = useThemeColor({}, "tint");
   const surface = useThemeColor({}, "surfaceRaised");
   const border = useThemeColor({}, "borderSubtle");
-  const successColor = useThemeColor({}, "success");
   const errorColor = useThemeColor({}, "error");
 
   const {
@@ -43,6 +95,11 @@ export default function ServicesScreen() {
     refetchInterval: 30_000,
   });
 
+  const sorted = useMemo(
+    () => (services ? sortServices(services, sortKey) : []),
+    [services, sortKey],
+  );
+
   if (!client) {
     return (
       <ThemedView style={styles.centered}>
@@ -53,8 +110,13 @@ export default function ServicesScreen() {
 
   if (isLoading) {
     return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator color={tint} size="large" />
+      <ThemedView style={styles.container}>
+        <View style={styles.list}>
+          <SkeletonCard surface={surface} border={border} />
+          <SkeletonCard surface={surface} border={border} />
+          <SkeletonCard surface={surface} border={border} />
+          <SkeletonCard surface={surface} border={border} />
+        </View>
       </ThemedView>
     );
   }
@@ -78,22 +140,31 @@ export default function ServicesScreen() {
   return (
     <ThemedView style={styles.container}>
       <FlatList
-        data={services}
+        data={sorted}
         keyExtractor={(item) => item.serviceName}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={tint} />
         }
         ListHeaderComponent={
-          activeName ? (
-            <ThemedText type="caption" style={styles.instanceLabel}>
-              {activeName.toUpperCase()}
-            </ThemedText>
-          ) : null
+          <View style={styles.header}>
+            {activeName ? (
+              <ThemedText type="caption" style={styles.instanceLabel}>
+                {activeName.toUpperCase()}
+              </ThemedText>
+            ) : null}
+            <SortBar current={sortKey} onSelect={setSortKey} tint={tint} border={border} />
+          </View>
         }
         ListEmptyComponent={
-          <View style={styles.centered}>
-            <ThemedText type="caption">No services found in the last 6 hours.</ThemedText>
+          <View style={styles.emptyState}>
+            <ThemedText type="subtitle" style={{ textAlign: "center" }}>
+              No services found
+            </ThemedText>
+            <ThemedText type="caption" style={{ textAlign: "center" }}>
+              No services reported data in the last 6 hours. Check that your applications are
+              instrumented and sending traces.
+            </ThemedText>
           </View>
         }
         renderItem={({ item }) => (
@@ -101,10 +172,9 @@ export default function ServicesScreen() {
             item={item}
             surface={surface}
             border={border}
-            tint={tint}
-            successColor={successColor}
-            errorColor={errorColor}
-            onPress={() => router.push({ pathname: "/service/[name]", params: { name: item.serviceName } })}
+            onPress={() =>
+              router.push({ pathname: "/service/[name]", params: { name: item.serviceName } })
+            }
           />
         )}
       />
@@ -112,59 +182,132 @@ export default function ServicesScreen() {
   );
 }
 
+// ── Sort bar ──────────────────────────────────────────────────
+
+function SortBar({
+  current,
+  onSelect,
+  tint,
+  border,
+}: {
+  current: SortKey;
+  onSelect: (key: SortKey) => void;
+  tint: string;
+  border: string;
+}) {
+  return (
+    <View style={styles.sortBar}>
+      {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => {
+        const active = key === current;
+        return (
+          <Pressable
+            key={key}
+            onPress={() => onSelect(key)}
+            style={[
+              styles.sortChip,
+              {
+                backgroundColor: active ? tint + "22" : "transparent",
+                borderColor: active ? tint : border,
+              },
+            ]}
+            testID={`sort-${key}`}
+          >
+            <ThemedText
+              style={{
+                fontSize: FontSize.xs,
+                fontWeight: active ? "600" : "400",
+                color: active ? tint : undefined,
+              }}
+            >
+              {SORT_LABELS[key]}
+            </ThemedText>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+// ── Service card ──────────────────────────────────────────────
+
+const STATUS_COLORS: Record<Status, string> = {
+  healthy: Brand.green400,
+  degraded: Brand.amber500,
+  critical: Brand.red400,
+};
+
 function ServiceCard({
   item,
   surface,
   border,
-  tint,
-  successColor,
-  errorColor,
   onPress,
 }: {
   item: ServiceItem;
   surface: string;
   border: string;
-  tint: string;
-  successColor: string;
-  errorColor: string;
   onPress: () => void;
 }) {
-  const p99Ms = (item.p99 / 1_000_000).toFixed(1);
-  const avgMs = (item.avgDuration / 1_000_000).toFixed(1);
-  const errRate = item.numCalls > 0 ? ((item.numErrors / item.numCalls) * 100).toFixed(2) : "0.00";
-  const hasErrors = item.numErrors > 0;
+  const status = serviceStatus(item);
+  const dotColor = STATUS_COLORS[status];
+  const p99Ms = item.p99 / 1_000_000;
+  const errRate = item.numCalls > 0 ? (item.numErrors / item.numCalls) * 100 : 0;
 
   return (
     <Pressable
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: surface, borderColor: border, opacity: pressed ? 0.85 : 1 },
+        {
+          backgroundColor: surface,
+          borderColor: status === "critical" ? Brand.red400 + "44" : border,
+          opacity: pressed ? 0.85 : 1,
+        },
       ]}
       onPress={onPress}
       testID={`service-card-${item.serviceName}`}
     >
       <View style={styles.cardTop}>
+        <View style={[styles.dot, { backgroundColor: dotColor }]} />
         <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ flex: 1 }}>
           {item.serviceName}
         </ThemedText>
-        <View style={[styles.dot, { backgroundColor: hasErrors ? errorColor : successColor }]} />
       </View>
 
       <View style={styles.metricsRow}>
-        <MetricCell label="P99" value={`${p99Ms}ms`} color={tint} />
-        <MetricCell label="Avg" value={`${avgMs}ms`} color={tint} />
-        <MetricCell label="Rate" value={`${item.callRate.toFixed(1)}/s`} color={tint} />
         <MetricCell
-          label="Errors"
-          value={`${errRate}%`}
-          color={hasErrors ? errorColor : successColor}
+          label="P99"
+          value={formatLatency(p99Ms)}
+          warn={p99Ms >= P99_WARN_MS}
+          crit={p99Ms >= P99_CRIT_MS}
         />
+        <MetricCell
+          label="Err%"
+          value={`${errRate.toFixed(2)}%`}
+          warn={errRate >= ERR_RATE_WARN * 100}
+          crit={errRate >= ERR_RATE_CRIT * 100}
+        />
+        <MetricCell label="RPM" value={formatRate(item.callRate)} />
+        <MetricCell label="Avg" value={formatLatency(item.avgDuration / 1_000_000)} />
       </View>
     </Pressable>
   );
 }
 
-function MetricCell({ label, value, color }: { label: string; value: string; color: string }) {
+// ── Metric cell ───────────────────────────────────────────────
+
+function MetricCell({
+  label,
+  value,
+  warn,
+  crit,
+}: {
+  label: string;
+  value: string;
+  warn?: boolean;
+  crit?: boolean;
+}) {
+  const tint = useThemeColor({}, "tint");
+  const color = crit ? Brand.red400 : warn ? Brand.amber500 : tint;
+
   return (
     <View style={styles.metricCell}>
       <ThemedText type="caption">{label}</ThemedText>
@@ -174,6 +317,59 @@ function MetricCell({ label, value, color }: { label: string; value: string; col
     </View>
   );
 }
+
+// ── Skeleton card ─────────────────────────────────────────────
+
+function SkeletonCard({ surface, border }: { surface: string; border: string }) {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  return (
+    <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+      <View style={styles.cardTop}>
+        <Animated.View
+          style={[styles.skeletonBar, { width: 10, height: 10, borderRadius: 5, opacity }]}
+        />
+        <Animated.View style={[styles.skeletonBar, { width: "60%", opacity }]} />
+      </View>
+      <View style={styles.metricsRow}>
+        {[1, 2, 3, 4].map((i) => (
+          <View key={i} style={styles.metricCell}>
+            <Animated.View style={[styles.skeletonBar, { width: 28, height: 10, opacity }]} />
+            <Animated.View style={[styles.skeletonBar, { width: 48, opacity }]} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ── Formatters ────────────────────────────────────────────────
+
+function formatLatency(ms: number): string {
+  if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
+  if (ms < 1000) return `${ms.toFixed(0)}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+}
+
+function formatRate(perSec: number): string {
+  const rpm = perSec * 60;
+  if (rpm < 1) return `${(perSec * 60).toFixed(2)}/m`;
+  if (rpm < 1000) return `${rpm.toFixed(0)}/m`;
+  return `${(rpm / 1000).toFixed(1)}k/m`;
+}
+
+// ── Styles ────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -190,9 +386,22 @@ const styles = StyleSheet.create({
     padding: Space.lg,
     gap: Space.md,
   },
+  header: {
+    gap: Space.sm,
+    marginBottom: Space.xs,
+  },
   instanceLabel: {
     letterSpacing: 1,
-    marginBottom: Space.xs,
+  },
+  sortBar: {
+    flexDirection: "row",
+    gap: Space.sm,
+  },
+  sortChip: {
+    paddingHorizontal: Space.md,
+    paddingVertical: Space.xs,
+    borderRadius: Radius.full,
+    borderWidth: 1,
   },
   card: {
     borderWidth: 1,
@@ -206,9 +415,9 @@ const styles = StyleSheet.create({
     gap: Space.sm,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   metricsRow: {
     flexDirection: "row",
@@ -217,10 +426,20 @@ const styles = StyleSheet.create({
   metricCell: {
     gap: 2,
   },
+  emptyState: {
+    paddingVertical: Space.xxxl,
+    gap: Space.md,
+    alignItems: "center",
+  },
   retryButton: {
     borderWidth: 1,
     borderRadius: Radius.md,
     paddingHorizontal: Space.lg,
     paddingVertical: Space.sm,
+  },
+  skeletonBar: {
+    height: 14,
+    borderRadius: Radius.sm,
+    backgroundColor: "#4668DC33",
   },
 });
