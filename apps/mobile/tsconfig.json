@@ -6,9 +6,5 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "references": [
-    { "path": "../../packages/shared-types" },
-    { "path": "../../packages/signoz-client" }
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

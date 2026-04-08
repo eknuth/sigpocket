@@ -4,7 +4,9 @@
   "scripts": {
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck",
-    "build:mobile": "pnpm --filter @sigpocket/mobile run build"
+    "build:mobile": "pnpm --filter @sigpocket/mobile run build",
+    "e2e": "maestro test e2e/",
+    "e2e:onboarding": "maestro test e2e/onboarding.yaml"
   },
   "engines": {
     "node": ">=20",

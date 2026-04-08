@@ -39,6 +39,13 @@ export type SigNozConfig = {
   apiKey: string;
 };
 
+export type SigNozInstance = {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+};
+
 export type ChartPoint = {
   timestamp: number;
   p95: number; // milliseconds

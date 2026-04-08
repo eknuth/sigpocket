@@ -31,6 +31,9 @@ importers:
       '@sigpocket/signoz-client':
         specifier: workspace:*
         version: link:../../packages/signoz-client
+      '@sigpocket/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.96.2(react@19.1.0)
@@ -103,6 +106,9 @@ importers:
       victory-native:
         specifier: ^41.20.2
         version: 41.20.2(@shopify/react-native-skia@2.2.12(react-native-reanimated@4.1.7(react-native-worklets@0.5.1(@babel/core@7.29.0)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(@types/react@19.1.17)(react-native-gesture-handler@2.28.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-reanimated@4.1.7(react-native-worklets@0.5.1(@babel/core@7.29.0)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      zustand:
+        specifier: ^5.0.12
+        version: 5.0.12(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@types/react':
         specifier: ~19.1.0
@@ -124,6 +130,22 @@ importers:
         version: 5.9.3
 
   packages/signoz-client:
+    dependencies:
+      '@sigpocket/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+    devDependencies:
+      eslint:
+        specifier: ^9.25.0
+        version: 9.39.4
+      typescript:
+        specifier: ~5.9.2
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.0.0
+        version: 8.58.0(eslint@9.39.4)(typescript@5.9.3)
+
+  packages/telemetry:
     dependencies:
       '@sigpocket/shared-types':
         specifier: workspace:*
@@ -4370,6 +4392,24 @@ packages:
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  zustand@5.0.12:
+    resolution: {integrity: sha512-i77ae3aZq4dhMlRhJVCYgMLKuSiZAaUPAct2AksxQ+gOtimhGMdXljRT21P5BNpeT4kXlLIckvkPM029OljD7g==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
 
 snapshots:
 
@@ -9507,3 +9547,9 @@ snapshots:
       yargs-parser: 21.1.1
 
   yocto-queue@0.1.0: {}
+
+  zustand@5.0.12(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0)):
+    optionalDependencies:
+      '@types/react': 19.1.17
+      react: 19.1.0
+      use-sync-external-store: 1.6.0(react@19.1.0)

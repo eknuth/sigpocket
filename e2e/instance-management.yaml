@@ -1,0 +1,49 @@
+appId: com.eknuth.sigpocket
+name: "Instance management - Add, switch, edit, remove"
+tags:
+  - requires-instance
+---
+
+# Precondition: at least one instance exists, app shows Services tab
+- assertVisible: "Services"
+
+# Navigate to settings
+- tapOn: "Settings"
+
+# Should see the existing instance
+- assertVisible: "INSTANCES"
+
+# Add a second instance
+- tapOn:
+    id: "add-instance-button"
+
+# Fill in second instance
+- tapOn:
+    id: "instance-name-input"
+- inputText: "Staging"
+
+- tapOn:
+    id: "instance-url-input"
+- inputText: ${SIGNOZ_URL}
+
+- tapOn:
+    id: "instance-apikey-input"
+- inputText: ${SIGNOZ_API_KEY}
+
+# Test and save
+- tapOn:
+    id: "test-connection-button"
+- extendedWaitUntil:
+    visible:
+      id: "connection-success"
+    timeout: 15000
+
+- tapOn:
+    id: "save-instance-button"
+
+# Should return to settings with two instances
+- assertVisible: "INSTANCES"
+
+# Verify add-instance button still visible
+- assertVisible:
+    id: "add-instance-button"

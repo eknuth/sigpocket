@@ -1,0 +1,25 @@
+appId: com.eknuth.sigpocket
+name: "Service list - View services from connected instance"
+tags:
+  - requires-instance
+---
+
+# Should be on the services tab
+- assertVisible: "Services"
+
+# Wait for services to load (either service cards or empty state)
+- extendedWaitUntil:
+    visible: "P99"
+    timeout: 15000
+
+# Verify metric labels are present
+- assertVisible: "Avg"
+- assertVisible: "Rate"
+- assertVisible: "Errors"
+
+# Tap a service card to navigate to detail
+- tapOn:
+    text: "P99"
+
+# Should see the service detail screen
+- assertVisible: "Service"

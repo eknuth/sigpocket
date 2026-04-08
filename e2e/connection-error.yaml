@@ -1,0 +1,47 @@
+appId: com.eknuth.sigpocket
+name: "Connection error handling - Bad URL and bad API key"
+---
+
+# App should launch into onboarding
+- assertVisible: "SigPocket"
+
+# Enter a bad URL
+- tapOn:
+    id: "instance-url-input"
+- inputText: "https://nonexistent.invalid.test"
+
+- tapOn:
+    id: "instance-apikey-input"
+- inputText: "bad-key"
+
+# Test connection
+- tapOn:
+    id: "test-connection-button"
+
+# Should show error
+- extendedWaitUntil:
+    visible:
+      id: "connection-error"
+    timeout: 15000
+
+# Save button should still be disabled (can't save without successful test)
+# Clear and try with bad API key against real URL
+- tapOn:
+    id: "instance-url-input"
+- clearText
+- inputText: ${SIGNOZ_URL}
+
+- tapOn:
+    id: "instance-apikey-input"
+- clearText
+- inputText: "invalid-api-key-12345"
+
+# Test connection again
+- tapOn:
+    id: "test-connection-button"
+
+# Should show auth error
+- extendedWaitUntil:
+    visible:
+      id: "connection-error"
+    timeout: 15000

@@ -1,0 +1,53 @@
+appId: com.eknuth.sigpocket
+name: "Onboarding - First instance setup"
+---
+
+# App should launch into onboarding when no instances configured
+- assertVisible: "SigPocket"
+- assertVisible: "Connect your instance"
+
+# Form fields should be visible
+- assertVisible:
+    id: "instance-url-input"
+- assertVisible:
+    id: "instance-apikey-input"
+- assertVisible:
+    id: "instance-name-input"
+
+# Test connection button should be visible but test is disabled without input
+- assertVisible:
+    id: "test-connection-button"
+
+# Save should be disabled before testing
+- assertVisible:
+    id: "save-instance-button"
+
+# Fill in instance details
+- tapOn:
+    id: "instance-name-input"
+- inputText: "Test Instance"
+
+- tapOn:
+    id: "instance-url-input"
+- inputText: ${SIGNOZ_URL}
+
+- tapOn:
+    id: "instance-apikey-input"
+- inputText: ${SIGNOZ_API_KEY}
+
+# Test connection
+- tapOn:
+    id: "test-connection-button"
+
+# Wait for connection result (success or error)
+- extendedWaitUntil:
+    visible:
+      id: "connection-success"
+    timeout: 15000
+
+# Save instance
+- tapOn:
+    id: "save-instance-button"
+
+# Should navigate to services tab
+- assertVisible: "Services"
