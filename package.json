@@ -1,5 +1,11 @@
 {
   "name": "sigpocket",
+  "description": "Mobile client for SigNoz — monitor services, latency, and errors from your phone",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eknuth/sigpocket.git"
+  },
   "private": true,
   "scripts": {
     "lint": "pnpm -r run lint",

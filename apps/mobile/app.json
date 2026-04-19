@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eknuth.sigpocket"
+      "bundleIdentifier": "com.sigpocket.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.eknuth.sigpocket"
+      "package": "com.sigpocket.mobile"
     },
     "web": {
       "output": "static",
