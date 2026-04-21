@@ -37,6 +37,10 @@ export type ServicesResponse = ServiceItem[];
 export type SigNozConfig = {
   baseUrl: string;
   apiKey: string;
+  // Optional explicit OTLP ingestion URL. Falls back to `baseUrl` when absent.
+  // SigNoz Cloud uses ingest.<region>.signoz.cloud; self-hosted deployments
+  // commonly run the OTLP collector on :4318 separate from the query UI.
+  otlpUrl?: string;
 };
 
 export type SigNozInstance = {
@@ -44,6 +48,8 @@ export type SigNozInstance = {
   name: string;
   baseUrl: string;
   apiKey: string;
+  // Optional explicit OTLP ingestion URL. Falls back to `baseUrl` when absent.
+  otlpUrl?: string;
 };
 
 export type ChartPoint = {

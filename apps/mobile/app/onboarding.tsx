@@ -12,7 +12,12 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const addInstance = useInstanceStore((s) => s.addInstance);
 
-  async function handleSave(values: { name: string; baseUrl: string; apiKey: string }) {
+  async function handleSave(values: {
+    name: string;
+    baseUrl: string;
+    apiKey: string;
+    otlpUrl?: string;
+  }) {
     await addInstance({
       id: randomId(),
       ...values,

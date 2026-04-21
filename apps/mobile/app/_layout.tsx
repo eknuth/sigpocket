@@ -57,7 +57,11 @@ function RootNav() {
   // Sync telemetry with active instance
   useEffect(() => {
     const active = getActive();
-    configureTelemetry(active ? { baseUrl: active.baseUrl, apiKey: active.apiKey } : null);
+    configureTelemetry(
+      active
+        ? { baseUrl: active.baseUrl, apiKey: active.apiKey, otlpUrl: active.otlpUrl }
+        : null,
+    );
   }, [activeInstanceId, getActive]);
 
   useEffect(() => {

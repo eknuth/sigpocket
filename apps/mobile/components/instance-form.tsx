@@ -10,12 +10,20 @@ import { SigNozClient } from "@sigpocket/signoz-client";
 import { traceAsync } from "@sigpocket/telemetry";
 
 import { ThemedText } from "@/components/themed-text";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Brand, FontSize, Radius, Space } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
+type InstanceFormValues = {
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  otlpUrl?: string;
+};
+
 type Props = {
-  initial?: { name: string; baseUrl: string; apiKey: string };
-  onSave: (values: { name: string; baseUrl: string; apiKey: string }) => void;
+  initial?: InstanceFormValues;
+  onSave: (values: InstanceFormValues) => void;
   submitLabel?: string;
 };
 
@@ -29,6 +37,8 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
   const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
   const [apiKey, setApiKey] = useState(initial?.apiKey ?? "");
+  const [otlpUrl, setOtlpUrl] = useState(initial?.otlpUrl ?? "");
+  const [advancedOpen, setAdvancedOpen] = useState(Boolean(initial?.otlpUrl));
   const [status, setStatus] = useState<ConnectionStatus>({ state: "idle" });
 
   const tint = useThemeColor({}, "tint");
@@ -41,8 +51,15 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
   const warningColor = useThemeColor({}, "warning");
 
   const normalizedUrl = baseUrl.replace(/\/+$/, "");
+  const normalizedOtlpUrl = otlpUrl.trim().replace(/\/+$/, "");
   const insecureScheme = isInsecureScheme(normalizedUrl);
-  const canTest = normalizedUrl.length > 0 && apiKey.length > 0 && !insecureScheme;
+  const insecureOtlpScheme =
+    normalizedOtlpUrl.length > 0 && isInsecureScheme(normalizedOtlpUrl);
+  const canTest =
+    normalizedUrl.length > 0 &&
+    apiKey.length > 0 &&
+    !insecureScheme &&
+    !insecureOtlpScheme;
   const canSave = canTest && status.state === "ok";
 
   async function testConnection() {
@@ -64,7 +81,12 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
   }
 
   function handleSave() {
-    onSave({ name: name.trim() || normalizedUrl, baseUrl: normalizedUrl, apiKey });
+    onSave({
+      name: name.trim() || normalizedUrl,
+      baseUrl: normalizedUrl,
+      apiKey,
+      otlpUrl: normalizedOtlpUrl.length > 0 ? normalizedOtlpUrl : undefined,
+    });
   }
 
   return (
@@ -123,6 +145,53 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
           <ThemedText style={{ color: warningColor, fontSize: FontSize.sm }}>
             Use https:// — http:// sends your API key in plaintext.
           </ThemedText>
+        </View>
+      )}
+
+      <Pressable
+        style={styles.advancedToggle}
+        onPress={() => setAdvancedOpen((v) => !v)}
+        testID="advanced-toggle"
+      >
+        <IconSymbol
+          name="chevron.right"
+          size={16}
+          color={secondaryText}
+          style={{ transform: [{ rotate: advancedOpen ? "90deg" : "0deg" }] }}
+        />
+        <ThemedText style={{ color: secondaryText, fontSize: FontSize.sm, fontWeight: "600" }}>
+          Advanced
+        </ThemedText>
+      </Pressable>
+
+      {advancedOpen && (
+        <View style={styles.field}>
+          <ThemedText type="caption">OTLP ENDPOINT URL</ThemedText>
+          <TextInput
+            style={[styles.input, { color: textColor, borderColor: border, backgroundColor: surface }]}
+            placeholder={normalizedUrl.length > 0 ? normalizedUrl : "https://ingest.<region>.signoz.cloud"}
+            placeholderTextColor={secondaryText}
+            value={otlpUrl}
+            onChangeText={(t) => {
+              setOtlpUrl(t);
+              if (status.state !== "idle") setStatus({ state: "idle" });
+            }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            testID="instance-otlp-url-input"
+          />
+          <ThemedText style={{ color: secondaryText, fontSize: FontSize.sm }}>
+            Defaults to the SigNoz URL if left blank. Set this if your OTLP ingestion URL
+            differs (e.g. ingest.&lt;region&gt;.signoz.cloud or a collector on :4318).
+          </ThemedText>
+          {insecureOtlpScheme && (
+            <View style={[styles.statusBanner, { backgroundColor: warningColor + "18", borderColor: warningColor + "44" }]} testID="insecure-otlp-scheme-warning">
+              <ThemedText style={{ color: warningColor, fontSize: FontSize.sm }}>
+                Use https:// — http:// sends your API key in plaintext.
+              </ThemedText>
+            </View>
+          )}
         </View>
       )}
 
@@ -257,5 +326,11 @@ const styles = StyleSheet.create({
     padding: Space.md,
     borderRadius: Radius.sm,
     borderWidth: 1,
+  },
+  advancedToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Space.xs,
+    paddingVertical: Space.xs,
   },
 });

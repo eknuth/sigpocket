@@ -22,7 +22,12 @@ export default function EditInstanceScreen() {
     );
   }
 
-  async function handleSave(values: { name: string; baseUrl: string; apiKey: string }) {
+  async function handleSave(values: {
+    name: string;
+    baseUrl: string;
+    apiKey: string;
+    otlpUrl?: string;
+  }) {
     await updateInstance(id, values);
     router.back();
   }
@@ -31,7 +36,12 @@ export default function EditInstanceScreen() {
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <InstanceForm
-          initial={{ name: instance.name, baseUrl: instance.baseUrl, apiKey: instance.apiKey }}
+          initial={{
+            name: instance.name,
+            baseUrl: instance.baseUrl,
+            apiKey: instance.apiKey,
+            otlpUrl: instance.otlpUrl,
+          }}
           onSave={handleSave}
           submitLabel="Save Changes"
         />

@@ -171,8 +171,13 @@ async function flush() {
     ],
   };
 
+  // Prefer an explicit OTLP URL when set — SigNoz Cloud and many self-hosted
+  // deployments expose ingestion on a different host/port than the query UI.
+  // Fall back to `baseUrl` to preserve behavior for existing configs.
+  const ingestBase = (config.otlpUrl ?? config.baseUrl).replace(/\/+$/, "");
+
   try {
-    await fetch(`${config.baseUrl}/v1/traces`, {
+    await fetch(`${ingestBase}/v1/traces`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
