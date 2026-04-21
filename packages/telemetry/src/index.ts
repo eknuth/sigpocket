@@ -101,7 +101,7 @@ export function startSpan(name: string, parentSpanId?: string): Span {
     },
     setStatus(status, message) {
       statusCode = status === "OK" ? 1 : status === "ERROR" ? 2 : 0;
-      statusMessage = message;
+      statusMessage = message?.slice(0, 256);
       return span;
     },
     end() {

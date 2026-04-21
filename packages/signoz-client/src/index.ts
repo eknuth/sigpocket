@@ -36,9 +36,10 @@ export class SigNozClient {
         "SIGNOZ-API-KEY": this.config.apiKey,
       },
       body: body ? JSON.stringify(body) : undefined,
+      redirect: "error",
     });
     if (!res.ok) {
-      const text = await res.text();
+      const text = (await res.text()).slice(0, 200).split(this.config.apiKey).join("[REDACTED]");
       throw new Error(`SigNoz ${res.status}: ${text}`);
     }
     return res.json();

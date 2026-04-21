@@ -38,16 +38,18 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
   const border = useThemeColor({}, "border");
   const successColor = useThemeColor({}, "success");
   const errorColor = useThemeColor({}, "error");
+  const warningColor = useThemeColor({}, "warning");
 
   const normalizedUrl = baseUrl.replace(/\/+$/, "");
-  const canTest = normalizedUrl.length > 0 && apiKey.length > 0;
+  const insecureScheme = isInsecureScheme(normalizedUrl);
+  const canTest = normalizedUrl.length > 0 && apiKey.length > 0 && !insecureScheme;
   const canSave = canTest && status.state === "ok";
 
   async function testConnection() {
     setStatus({ state: "testing" });
     const client = new SigNozClient({ baseUrl: normalizedUrl, apiKey });
     const result = await traceAsync("instance.test_connection", async (span) => {
-      span.setAttribute("instance.url", normalizedUrl);
+      span.setAttribute("instance.url_hash", hashUrl(normalizedUrl));
       const r = await client.testConnection();
       if (r.ok) {
         span.setAttribute("instance.service_count", r.serviceCount ?? 0);
@@ -116,6 +118,14 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
         />
       </View>
 
+      {insecureScheme && (
+        <View style={[styles.statusBanner, { backgroundColor: warningColor + "18", borderColor: warningColor + "44" }]} testID="insecure-scheme-warning">
+          <ThemedText style={{ color: warningColor, fontSize: FontSize.sm }}>
+            Use https:// — http:// sends your API key in plaintext.
+          </ThemedText>
+        </View>
+      )}
+
       <Pressable
         style={({ pressed }) => [
           styles.button,
@@ -160,6 +170,32 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
       </Pressable>
     </View>
   );
+}
+
+function isInsecureScheme(url: string): boolean {
+  const match = url.match(/^http:\/\/([^/:]+)/i);
+  if (!match) return false;
+  const host = match[1].toLowerCase();
+  if (host === "localhost" || host === "127.0.0.1") return false;
+  const parts = host.split(".").map(Number);
+  if (parts.length === 4 && parts.every((n) => Number.isInteger(n) && n >= 0 && n <= 255)) {
+    const [a, b] = parts;
+    if (a === 10) return false;
+    if (a === 192 && b === 168) return false;
+    if (a === 172 && b >= 16 && b <= 31) return false;
+  }
+  return true;
+}
+
+// Non-crypto hash for telemetry correlation only — Expo Go lacks Web Crypto
+// and we don't want to take on expo-crypto just for an opaque ID.
+function hashUrl(url: string): string {
+  let h = 0xcbf29ce4;
+  for (let i = 0; i < url.length; i++) {
+    h ^= url.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0");
 }
 
 function friendlyError(raw: string): string {
