@@ -17,6 +17,7 @@ import { Brand, FontSize, Radius, Space } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useSignozClient } from "@/hooks/use-signoz-client";
 import { useInstanceStore } from "@/stores/instance-store";
+import { usePreferencesStore } from "@/stores/preferences-store";
 
 // ── Status thresholds ─────────────────────────────────────────
 
@@ -75,6 +76,7 @@ export default function ServicesScreen() {
   const client = useSignozClient();
   const activeId = useInstanceStore((s) => s.activeInstanceId);
   const activeName = useInstanceStore((s) => s.getActive()?.name);
+  const refreshIntervalMs = usePreferencesStore((s) => s.refreshIntervalMs);
   const [sortKey, setSortKey] = useState<SortKey>("status");
 
   const tint = useThemeColor({}, "tint");
@@ -92,7 +94,7 @@ export default function ServicesScreen() {
     queryKey: ["services", activeId],
     queryFn: () => client!.fetchServices(24),
     enabled: !!client,
-    refetchInterval: 30_000,
+    refetchInterval: refreshIntervalMs,
   });
 
   const sorted = useMemo(
