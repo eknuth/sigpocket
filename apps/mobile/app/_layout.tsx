@@ -87,6 +87,8 @@ function RootNav() {
         <Stack.Screen name="add-instance" options={{ title: "Add Instance", presentation: "modal" }} />
         <Stack.Screen name="edit-instance" options={{ title: "Edit Instance", presentation: "modal" }} />
         <Stack.Screen name="service/[name]" options={{ title: "Service" }} />
+        <Stack.Screen name="traces/[service]" options={{ title: "Recent Traces" }} />
+        <Stack.Screen name="trace/[id]" options={{ title: "Trace" }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

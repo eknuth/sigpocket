@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   Pressable,
@@ -61,6 +61,7 @@ const TIME_RANGES: TimeRange[] = [
 
 export default function ServiceDetailScreen() {
   const { name } = useLocalSearchParams<{ name: string }>();
+  const router = useRouter();
   const client = useSignozClient();
   const activeId = useInstanceStore((s) => s.activeInstanceId);
   const [rangeIdx, setRangeIdx] = useState(0);
@@ -123,6 +124,25 @@ export default function ServiceDetailScreen() {
 
         {/* ── RED metrics (Rate, Errors, Duration) */}
         {service && <RedMetrics service={service} />}
+
+        {/* ── Recent traces link ──────────────── */}
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: "/traces/[service]", params: { service: name } })
+          }
+          style={({ pressed }) => [
+            styles.tracesLink,
+            {
+              borderColor: tint,
+              backgroundColor: pressed ? tint + "22" : "transparent",
+            },
+          ]}
+          testID="view-recent-traces"
+        >
+          <ThemedText style={{ color: tint, fontWeight: "600" }}>
+            View recent traces →
+          </ThemedText>
+        </Pressable>
 
         {/* ── Time range selector ─────────────── */}
         <View style={styles.rangeBar}>
@@ -349,5 +369,12 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     alignItems: "center",
     gap: Space.sm,
+  },
+  tracesLink: {
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    paddingVertical: Space.md,
+    paddingHorizontal: Space.lg,
+    alignItems: "center",
   },
 });
