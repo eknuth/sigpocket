@@ -112,6 +112,10 @@ export class SigNozClient {
     }));
   }
 
+  // SigNoz v3 /api/v3/query_range with panelType="list" requires selectColumns;
+  // omitting them returns HTTP 500 "select columns cannot be empty for panelType list".
+  // These are the fields the UI consumes via TraceSpan / TraceListItem.
+
   async searchTraces(
     serviceName: string,
     hours = 1,
@@ -136,6 +140,7 @@ export class SigNozClient {
             disabled: false,
             limit,
             orderBy: [{ columnName: "timestamp", order: "desc" }],
+            selectColumns: TRACE_LIST_COLUMNS,
             // parentSpanID = "" gives root spans only — one row per trace.
             filters: {
               op: "AND",
@@ -183,6 +188,7 @@ export class SigNozClient {
             disabled: false,
             limit: 1000,
             orderBy: [{ columnName: "timestamp", order: "asc" }],
+            selectColumns: TRACE_LIST_COLUMNS,
             filters: {
               op: "AND",
               items: [
@@ -229,6 +235,7 @@ export class SigNozClient {
             disabled: false,
             limit,
             orderBy: [{ columnName: "timestamp", order: "desc" }],
+            selectColumns: LOG_LIST_COLUMNS,
             // service.name is a resource attribute; severity_text is a log
             // attribute (fieldContext="log") per signoz_get_field_keys.
             filters: {
@@ -264,6 +271,34 @@ export class SigNozClient {
     }
   }
 }
+
+const TRACE_LIST_COLUMNS = [
+  { key: "traceID", type: "tag", dataType: "string" },
+  { key: "spanID", type: "tag", dataType: "string" },
+  { key: "parentSpanID", type: "tag", dataType: "string" },
+  { key: "name", type: "tag", dataType: "string" },
+  { key: "durationNano", type: "tag", dataType: "float64" },
+  { key: "timestamp", type: "tag", dataType: "string" },
+  { key: "hasError", type: "tag", dataType: "bool" },
+  { key: "statusCode", type: "tag", dataType: "int64" },
+  { key: "statusCodeString", type: "tag", dataType: "string" },
+  { key: "spanKind", type: "tag", dataType: "string" },
+  { key: "responseStatusCode", type: "tag", dataType: "string" },
+  { key: "service.name", type: "resource", dataType: "string" },
+];
+
+const LOG_LIST_COLUMNS = [
+  { key: "id", type: "tag", dataType: "string" },
+  { key: "timestamp", type: "tag", dataType: "string" },
+  { key: "body", type: "tag", dataType: "string" },
+  { key: "severity_text", type: "log", dataType: "string" },
+  { key: "severity_number", type: "log", dataType: "int64" },
+  { key: "trace_id", type: "tag", dataType: "string" },
+  { key: "span_id", type: "tag", dataType: "string" },
+  { key: "service.name", type: "resource", dataType: "string" },
+  { key: "attributes_string", type: "tag", dataType: "string" },
+  { key: "resources_string", type: "tag", dataType: "string" },
+];
 
 // SigNoz returned `data.results[].rows[]` in the v5 wire shape we observed,
 // but older deployments may still return `data.result[].list[]`. Tolerate both.
