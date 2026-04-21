@@ -3,7 +3,11 @@ import type {
   ServiceItem,
   QueryRangeResponse,
   QueryRangeValue,
+  QueryRangeListResponse,
   ChartPoint,
+  TraceListItem,
+  TraceDetail,
+  TraceSpan,
 } from "@sigpocket/shared-types";
 
 export class SigNozClient {
@@ -107,6 +111,99 @@ export class SigNozClient {
     }));
   }
 
+  async searchTraces(
+    serviceName: string,
+    hours = 1,
+    limit = 50,
+  ): Promise<TraceListItem[]> {
+    const start = SigNozClient.hoursAgoEpochSeconds(hours);
+    const end = SigNozClient.nowEpochSeconds();
+
+    const resp = (await this.fetch("/api/v3/query_range", {
+      start,
+      end,
+      step: 60,
+      compositeQuery: {
+        queryType: "builder",
+        panelType: "list",
+        builderQueries: {
+          A: {
+            dataSource: "traces",
+            queryName: "A",
+            aggregateOperator: "noop",
+            expression: "A",
+            disabled: false,
+            limit,
+            orderBy: [{ columnName: "timestamp", order: "desc" }],
+            // parentSpanID = "" gives root spans only — one row per trace.
+            filters: {
+              op: "AND",
+              items: [
+                {
+                  key: { key: "service.name", type: "resource", dataType: "string" },
+                  op: "=",
+                  value: serviceName,
+                },
+                {
+                  key: { key: "parentSpanID", type: "tag", dataType: "string" },
+                  op: "=",
+                  value: "",
+                },
+              ],
+            },
+          },
+        },
+      },
+    })) as QueryRangeListResponse;
+
+    const rows = extractListRows(resp);
+    return rows.map((r) => spanToTraceListItem(r.data as Partial<TraceSpan>));
+  }
+
+  async getTraceDetail(traceId: string): Promise<TraceDetail> {
+    // Trace detail is the set of all spans sharing a traceID. Window of 24h is
+    // generous — long-running traces still complete inside this.
+    const start = SigNozClient.hoursAgoEpochSeconds(24);
+    const end = SigNozClient.nowEpochSeconds();
+
+    const resp = (await this.fetch("/api/v3/query_range", {
+      start,
+      end,
+      step: 60,
+      compositeQuery: {
+        queryType: "builder",
+        panelType: "list",
+        builderQueries: {
+          A: {
+            dataSource: "traces",
+            queryName: "A",
+            aggregateOperator: "noop",
+            expression: "A",
+            disabled: false,
+            limit: 1000,
+            orderBy: [{ columnName: "timestamp", order: "asc" }],
+            filters: {
+              op: "AND",
+              items: [
+                {
+                  key: { key: "traceID", type: "tag", dataType: "string" },
+                  op: "=",
+                  value: traceId,
+                },
+              ],
+            },
+          },
+        },
+      },
+    })) as QueryRangeListResponse;
+
+    const rows = extractListRows(resp);
+    return {
+      traceID: traceId,
+      spans: rows.map((r) => normalizeSpan(r.data as Partial<TraceSpan>)),
+    };
+  }
+
   async testConnection(): Promise<{ ok: boolean; error?: string; serviceCount?: number }> {
     try {
       const services = await this.fetchServices(24);
@@ -115,4 +212,46 @@ export class SigNozClient {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
   }
+}
+
+// SigNoz returned `data.results[].rows[]` in the v5 wire shape we observed,
+// but older deployments may still return `data.result[].list[]`. Tolerate both.
+function extractListRows(
+  resp: QueryRangeListResponse,
+): Array<{ timestamp: string; data: Record<string, unknown> }> {
+  const r1 = resp.data.results?.[0]?.rows;
+  if (r1?.length) return r1;
+  const r2 = resp.data.result?.[0]?.list;
+  if (r2?.length) return r2;
+  return [];
+}
+
+function normalizeSpan(d: Partial<TraceSpan>): TraceSpan {
+  return {
+    traceID: String(d.traceID ?? ""),
+    spanID: String(d.spanID ?? ""),
+    parentSpanID: String(d.parentSpanID ?? ""),
+    name: String(d.name ?? ""),
+    durationNano: Number(d.durationNano ?? 0),
+    timestamp: String(d.timestamp ?? ""),
+    hasError: Boolean(d.hasError),
+    statusCode: Number(d.statusCode ?? 0),
+    statusCodeString: String(d.statusCodeString ?? ""),
+    spanKind: String(d.spanKind ?? ""),
+    responseStatusCode: String(d.responseStatusCode ?? ""),
+    "service.name": String(d["service.name"] ?? ""),
+  };
+}
+
+function spanToTraceListItem(d: Partial<TraceSpan>): TraceListItem {
+  const span = normalizeSpan(d);
+  return {
+    traceID: span.traceID,
+    rootOperation: span.name,
+    rootService: span["service.name"],
+    startTime: span.timestamp,
+    durationMs: span.durationNano / 1_000_000,
+    hasError: span.hasError,
+    responseStatusCode: span.responseStatusCode,
+  };
 }
