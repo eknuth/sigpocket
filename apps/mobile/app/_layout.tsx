@@ -89,6 +89,7 @@ function RootNav() {
         <Stack.Screen name="service/[name]" options={{ title: "Service" }} />
         <Stack.Screen name="traces/[service]" options={{ title: "Recent Traces" }} />
         <Stack.Screen name="trace/[id]" options={{ title: "Trace" }} />
+        <Stack.Screen name="logs/[service]" options={{ title: "Recent Errors" }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

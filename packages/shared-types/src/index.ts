@@ -84,6 +84,22 @@ export type TraceDetail = {
   spans: TraceSpan[];
 };
 
+// A log row from /api/v3/query_range with panelType="list" + dataSource="logs".
+// Field names follow the contract Agent B's screen consumes — do not rename.
+// `attributes` flattens log + resource attributes (and scope/trace ids when not
+// already promoted to top-level fields) to a string→string map for display.
+export type LogItem = {
+  id: string; // SigNoz row id; falls back to `${trace_id}-${span_id}-${timestamp}` when absent
+  timestamp: string; // ISO 8601
+  severityText: string; // 'ERROR' | 'WARN' | 'INFO' | 'DEBUG' | 'FATAL' | ''
+  severityNumber: number;
+  body: string;
+  serviceName: string;
+  attributes: Record<string, string>;
+  traceID?: string;
+  spanID?: string;
+};
+
 // Wrapper shape for /api/v3/query_range with panelType="list".
 // Differs from the time-series shape (QueryRangeResponse).
 export type QueryRangeListResponse = {

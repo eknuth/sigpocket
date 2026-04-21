@@ -8,6 +8,7 @@ import type {
   TraceListItem,
   TraceDetail,
   TraceSpan,
+  LogItem,
 } from "@sigpocket/shared-types";
 
 export class SigNozClient {
@@ -204,6 +205,56 @@ export class SigNozClient {
     };
   }
 
+  async searchLogs(
+    serviceName: string,
+    opts: { severities?: string[]; hours?: number; limit?: number } = {},
+  ): Promise<LogItem[]> {
+    const { severities = ["ERROR", "WARN"], hours = 1, limit = 100 } = opts;
+    const start = SigNozClient.hoursAgoEpochSeconds(hours);
+    const end = SigNozClient.nowEpochSeconds();
+
+    const resp = (await this.fetch("/api/v3/query_range", {
+      start,
+      end,
+      step: 60,
+      compositeQuery: {
+        queryType: "builder",
+        panelType: "list",
+        builderQueries: {
+          A: {
+            dataSource: "logs",
+            queryName: "A",
+            aggregateOperator: "noop",
+            expression: "A",
+            disabled: false,
+            limit,
+            orderBy: [{ columnName: "timestamp", order: "desc" }],
+            // service.name is a resource attribute; severity_text is a log
+            // attribute (fieldContext="log") per signoz_get_field_keys.
+            filters: {
+              op: "AND",
+              items: [
+                {
+                  key: { key: "service.name", type: "resource", dataType: "string" },
+                  op: "=",
+                  value: serviceName,
+                },
+                {
+                  key: { key: "severity_text", type: "log", dataType: "string" },
+                  op: "in",
+                  value: severities,
+                },
+              ],
+            },
+          },
+        },
+      },
+    })) as QueryRangeListResponse;
+
+    const rows = extractListRows(resp);
+    return rows.map((r) => normalizeLogRow(r.timestamp, r.data));
+  }
+
   async testConnection(): Promise<{ ok: boolean; error?: string; serviceCount?: number }> {
     try {
       const services = await this.fetchServices(24);
@@ -240,6 +291,51 @@ function normalizeSpan(d: Partial<TraceSpan>): TraceSpan {
     spanKind: String(d.spanKind ?? ""),
     responseStatusCode: String(d.responseStatusCode ?? ""),
     "service.name": String(d["service.name"] ?? ""),
+  };
+}
+
+// Log rows from /api/v3/query_range with dataSource="logs" carry attributes
+// in three typed buckets (`attributes_string|number|bool`) plus a separate
+// `resources_string` map for resource attributes. Flatten everything to a
+// single string→string map so the screen can render it generically.
+function normalizeLogRow(
+  outerTimestamp: string,
+  d: Record<string, unknown>,
+): LogItem {
+  const attributes: Record<string, string> = {};
+  const merge = (raw: unknown): void => {
+    if (!raw || typeof raw !== "object") return;
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (v === null || v === undefined) continue;
+      attributes[k] = typeof v === "string" ? v : String(v);
+    }
+  };
+  merge(d.attributes_string);
+  merge(d.attributes_number);
+  merge(d.attributes_bool);
+  merge(d.resources_string);
+
+  const resources =
+    d.resources_string && typeof d.resources_string === "object"
+      ? (d.resources_string as Record<string, unknown>)
+      : {};
+  const serviceName = String(resources["service.name"] ?? "");
+
+  const traceID = typeof d.trace_id === "string" ? d.trace_id : "";
+  const spanID = typeof d.span_id === "string" ? d.span_id : "";
+  const rawId = typeof d.id === "string" ? d.id : "";
+  const id = rawId || `${traceID}-${spanID}-${outerTimestamp}`;
+
+  return {
+    id,
+    timestamp: outerTimestamp,
+    severityText: typeof d.severity_text === "string" ? d.severity_text : "",
+    severityNumber: typeof d.severity_number === "number" ? d.severity_number : 0,
+    body: typeof d.body === "string" ? d.body : "",
+    serviceName,
+    attributes,
+    traceID: traceID || undefined,
+    spanID: spanID || undefined,
   };
 }
 

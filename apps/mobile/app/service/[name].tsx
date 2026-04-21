@@ -144,6 +144,25 @@ export default function ServiceDetailScreen() {
           </ThemedText>
         </Pressable>
 
+        {/* ── Recent errors link ──────────────── */}
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: "/logs/[service]", params: { service: name } })
+          }
+          style={({ pressed }) => [
+            styles.tracesLink,
+            {
+              borderColor: tint,
+              backgroundColor: pressed ? tint + "22" : "transparent",
+            },
+          ]}
+          testID="view-recent-errors"
+        >
+          <ThemedText style={{ color: tint, fontWeight: "600" }}>
+            View recent errors →
+          </ThemedText>
+        </Pressable>
+
         {/* ── Time range selector ─────────────── */}
         <View style={styles.rangeBar}>
           <ThemedText type="caption">P95 LATENCY</ThemedText>
