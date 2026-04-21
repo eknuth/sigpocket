@@ -298,9 +298,8 @@ function formatTimestamp(iso: string): string {
   if (Number.isNaN(d.getTime())) return iso;
   const now = Date.now();
   const diffMs = now - d.getTime();
-  const sec = Math.floor(diffMs / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.floor(sec / 60);
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return "just now";
   if (min < 60) return `${min}m ago`;
   const hr = Math.floor(min / 60);
   if (hr < 24) return `${hr}h ago`;
