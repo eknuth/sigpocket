@@ -1,0 +1,20 @@
+{
+  "name": "@sigpocket/push-relay",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Cloudflare Worker that relays SigNoz Alertmanager webhooks to Expo Push",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240419.0",
+    "eslint": "^9.25.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.0.0",
+    "wrangler": "^3.50.0"
+  }
+}

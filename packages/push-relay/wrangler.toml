@@ -1,0 +1,25 @@
+name = "sigpocket-push-relay"
+main = "src/index.ts"
+compatibility_date = "2026-04-22"
+
+# Per-instance Expo token registry.
+# Create with: wrangler kv:namespace create INSTANCE_TOKENS
+[[kv_namespaces]]
+binding = "INSTANCE_TOKENS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+# Rate-limit counters (short TTL).
+# Create with: wrangler kv:namespace create RATE_LIMITS
+[[kv_namespaces]]
+binding = "RATE_LIMITS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[vars]
+# Per-instance alerts/minute ceiling for /webhook.
+RATE_LIMIT_PER_MINUTE = "60"
+# Optional OTLP endpoint; leave empty to disable self-telemetry.
+OTEL_EXPORTER_OTLP_ENDPOINT = ""
+
+# Set via `wrangler secret put`:
+#   HMAC_SECRET         — 32+ bytes of random, signs device registrations
+#   OTEL_SIGNOZ_API_KEY — forwards relay logs to SigNoz (optional)
