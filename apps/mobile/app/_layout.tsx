@@ -10,7 +10,17 @@ import { configureTelemetry } from "@sigpocket/telemetry";
 
 import { Brand, Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import {
+  configureForegroundHandler,
+  ensureAndroidChannels,
+} from "@/lib/notifications";
 import { useInstanceStore } from "@/stores/instance-store";
+import { usePushStore } from "@/stores/push-store";
+
+// Foreground handler + channel setup run once at module load — they're
+// idempotent and have no side effects if the user hasn't granted permission.
+configureForegroundHandler();
+void ensureAndroidChannels();
 
 const queryClient = new QueryClient();
 
@@ -47,12 +57,14 @@ function RootNav() {
   const router = useRouter();
   const { hydrated, instances } = useInstanceStore();
   const hydrate = useInstanceStore((s) => s.hydrate);
+  const hydratePush = usePushStore((s) => s.hydrate);
   const getActive = useInstanceStore((s) => s.getActive);
   const activeInstanceId = useInstanceStore((s) => s.activeInstanceId);
 
   useEffect(() => {
     hydrate();
-  }, [hydrate]);
+    void hydratePush();
+  }, [hydrate, hydratePush]);
 
   // Sync telemetry with active instance
   useEffect(() => {

@@ -1,11 +1,14 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Linking,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   View,
 } from "react-native";
 
@@ -13,8 +16,14 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Brand, FontSize, Radius, Space } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import {
+  disablePushForInstance,
+  enablePushForInstance,
+} from "@/lib/push-registration";
+import { resolveRelayUrl } from "@/lib/push-relay";
 import { useInstanceStore } from "@/stores/instance-store";
 import { usePreferencesStore } from "@/stores/preferences-store";
+import { usePushStore } from "@/stores/push-store";
 
 // ── Preference options ────────────────────────────────────────
 
@@ -48,6 +57,9 @@ export default function SettingsScreen() {
   const setTheme = usePreferencesStore((s) => s.setTheme);
   const setRefreshIntervalMs = usePreferencesStore((s) => s.setRefreshIntervalMs);
 
+  const pushRegistrations = usePushStore((s) => s.registrations);
+  const [pushBusyId, setPushBusyId] = useState<string | null>(null);
+
   const tint = useThemeColor({}, "tint");
   const surface = useThemeColor({}, "surfaceRaised");
   const border = useThemeColor({}, "border");
@@ -59,8 +71,37 @@ export default function SettingsScreen() {
   function confirmDelete(id: string, name: string) {
     Alert.alert("Remove Instance", `Remove "${name}"? This cannot be undone.`, [
       { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => removeInstance(id) },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          const instance = instances.find((i) => i.id === id);
+          if (instance) {
+            // Best-effort unregister; don't block deletion on network failure.
+            void disablePushForInstance(instance);
+          }
+          await removeInstance(id);
+        },
+      },
     ]);
+  }
+
+  async function togglePush(instanceId: string, enable: boolean) {
+    const instance = instances.find((i) => i.id === instanceId);
+    if (!instance) return;
+    setPushBusyId(instanceId);
+    try {
+      if (enable) {
+        const result = await enablePushForInstance(instance);
+        if (!result.ok) {
+          Alert.alert("Push notifications", result.error);
+        }
+      } else {
+        await disablePushForInstance(instance);
+      }
+    } finally {
+      setPushBusyId(null);
+    }
   }
 
   function openExternal(url: string) {
@@ -75,6 +116,10 @@ export default function SettingsScreen() {
         <View style={styles.sectionBody}>
           {instances.map((item) => {
             const isActive = item.id === activeInstanceId;
+            const registration = pushRegistrations[item.id];
+            const relayConfigured = resolveRelayUrl(item.pushRelayUrl) !== null;
+            const pushEnabled = Boolean(registration);
+            const busy = pushBusyId === item.id;
             return (
               <Pressable
                 key={item.id}
@@ -104,6 +149,35 @@ export default function SettingsScreen() {
                 <ThemedText type="mono" numberOfLines={1}>
                   {item.baseUrl}
                 </ThemedText>
+
+                <View style={[styles.pushRow, { borderTopColor: borderSubtle }]}>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText style={{ fontSize: FontSize.sm }}>
+                      Push notifications
+                    </ThemedText>
+                    <ThemedText
+                      style={{ color: secondaryText, fontSize: FontSize.xs }}
+                      testID={`push-status-${item.id}`}
+                    >
+                      {!relayConfigured
+                        ? "No relay configured"
+                        : pushEnabled && registration
+                          ? `Registered ${formatRelativeTime(registration.registeredAt)}`
+                          : "Disabled"}
+                    </ThemedText>
+                  </View>
+                  {busy ? (
+                    <ActivityIndicator color={tint} />
+                  ) : (
+                    <Switch
+                      value={pushEnabled}
+                      onValueChange={(v) => togglePush(item.id, v)}
+                      disabled={!relayConfigured && !pushEnabled}
+                      testID={`push-toggle-${item.id}`}
+                    />
+                  )}
+                </View>
+
                 <View style={[styles.cardActions, { borderTopColor: borderSubtle }]}>
                   <Pressable
                     onPress={() =>
@@ -266,6 +340,18 @@ export default function SettingsScreen() {
   );
 }
 
+// ── Helpers ───────────────────────────────────────────────────
+
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return iso;
+  const diff = Date.now() - then;
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
 // ── Section header ────────────────────────────────────────────
 
 function SectionHeader({ label, color }: { label: string; color: string }) {
@@ -317,6 +403,15 @@ const styles = StyleSheet.create({
     marginTop: Space.sm,
     paddingTop: Space.md,
     borderTopWidth: 1,
+  },
+  pushRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Space.md,
+    marginTop: Space.sm,
+    paddingTop: Space.md,
+    borderTopWidth: 1,
+    minHeight: 40,
   },
   addButton: {
     borderWidth: 1,
