@@ -10,6 +10,7 @@ import { configureTelemetry } from "@sigpocket/telemetry";
 
 import { Brand, Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useNotificationDeepLink } from "@/hooks/use-notification-deep-link";
 import {
   configureForegroundHandler,
   ensureAndroidChannels,
@@ -66,6 +67,10 @@ function RootNav() {
     void hydratePush();
   }, [hydrate, hydratePush]);
 
+  // Route notification taps to the alerts deep-link screen. Guarded on
+  // `hydrated` so the router is mounted before we try to push.
+  useNotificationDeepLink(hydrated);
+
   // Sync telemetry with active instance
   useEffect(() => {
     const active = getActive();
@@ -106,6 +111,10 @@ function RootNav() {
         <Stack.Screen name="traces/[service]" options={{ title: "Recent Traces" }} />
         <Stack.Screen name="trace/[id]" options={{ title: "Trace" }} />
         <Stack.Screen name="logs/[service]" options={{ title: "Recent Errors" }} />
+        <Stack.Screen
+          name="alerts/[instanceId]/[fingerprint]"
+          options={{ title: "Alert" }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
