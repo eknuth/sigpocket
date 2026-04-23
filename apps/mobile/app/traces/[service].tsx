@@ -248,11 +248,11 @@ function TraceCard({
         </ThemedText>
       </View>
       <View style={styles.cardBottom}>
-        <ThemedText type="caption" style={{ color: secondary }}>
+        <ThemedText style={{ color: secondary, fontSize: FontSize.sm }}>
           {formatTimestamp(item.startTime)}
         </ThemedText>
         {item.responseStatusCode ? (
-          <ThemedText type="caption" style={{ color: secondary }}>
+          <ThemedText style={{ color: secondary, fontSize: FontSize.sm }}>
             HTTP {item.responseStatusCode}
           </ThemedText>
         ) : null}

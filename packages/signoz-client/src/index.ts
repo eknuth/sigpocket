@@ -163,7 +163,7 @@ export class SigNozClient {
     })) as QueryRangeListResponse;
 
     const rows = extractListRows(resp);
-    return rows.map((r) => spanToTraceListItem(r.data as Partial<TraceSpan>));
+    return rows.map((r) => spanToTraceListItem(r.data as Partial<TraceSpan>, r.timestamp));
   }
 
   async getTraceDetail(traceId: string): Promise<TraceDetail> {
@@ -374,13 +374,16 @@ function normalizeLogRow(
   };
 }
 
-function spanToTraceListItem(d: Partial<TraceSpan>): TraceListItem {
+// `selectColumns` strips fields not explicitly requested, and `timestamp`
+// often lives only on the row wrapper rather than inside `data`. Accept a
+// fallback so the row's outer timestamp is used when the data field is empty.
+function spanToTraceListItem(d: Partial<TraceSpan>, fallbackTimestamp = ""): TraceListItem {
   const span = normalizeSpan(d);
   return {
     traceID: span.traceID,
     rootOperation: span.name,
     rootService: span["service.name"],
-    startTime: span.timestamp,
+    startTime: span.timestamp || fallbackTimestamp,
     durationMs: span.durationNano / 1_000_000,
     hasError: span.hasError,
     responseStatusCode: span.responseStatusCode,
