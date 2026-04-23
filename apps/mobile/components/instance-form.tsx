@@ -19,6 +19,7 @@ type InstanceFormValues = {
   baseUrl: string;
   apiKey: string;
   otlpUrl?: string;
+  pushRelayUrl?: string;
 };
 
 type Props = {
@@ -38,7 +39,10 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
   const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
   const [apiKey, setApiKey] = useState(initial?.apiKey ?? "");
   const [otlpUrl, setOtlpUrl] = useState(initial?.otlpUrl ?? "");
-  const [advancedOpen, setAdvancedOpen] = useState(Boolean(initial?.otlpUrl));
+  const [pushRelayUrl, setPushRelayUrl] = useState(initial?.pushRelayUrl ?? "");
+  const [advancedOpen, setAdvancedOpen] = useState(
+    Boolean(initial?.otlpUrl || initial?.pushRelayUrl),
+  );
   const [status, setStatus] = useState<ConnectionStatus>({ state: "idle" });
 
   const tint = useThemeColor({}, "tint");
@@ -52,14 +56,18 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
 
   const normalizedUrl = baseUrl.replace(/\/+$/, "");
   const normalizedOtlpUrl = otlpUrl.trim().replace(/\/+$/, "");
+  const normalizedPushRelayUrl = pushRelayUrl.trim().replace(/\/+$/, "");
   const insecureScheme = isInsecureScheme(normalizedUrl);
   const insecureOtlpScheme =
     normalizedOtlpUrl.length > 0 && isInsecureScheme(normalizedOtlpUrl);
+  const insecurePushRelayScheme =
+    normalizedPushRelayUrl.length > 0 && isInsecureScheme(normalizedPushRelayUrl);
   const canTest =
     normalizedUrl.length > 0 &&
     apiKey.length > 0 &&
     !insecureScheme &&
-    !insecureOtlpScheme;
+    !insecureOtlpScheme &&
+    !insecurePushRelayScheme;
   const canSave = canTest && status.state === "ok";
 
   async function testConnection() {
@@ -86,6 +94,8 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
       baseUrl: normalizedUrl,
       apiKey,
       otlpUrl: normalizedOtlpUrl.length > 0 ? normalizedOtlpUrl : undefined,
+      pushRelayUrl:
+        normalizedPushRelayUrl.length > 0 ? normalizedPushRelayUrl : undefined,
     });
   }
 
@@ -189,6 +199,30 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
             <View style={[styles.statusBanner, { backgroundColor: warningColor + "18", borderColor: warningColor + "44" }]} testID="insecure-otlp-scheme-warning">
               <ThemedText style={{ color: warningColor, fontSize: FontSize.sm }}>
                 Use https:// — http:// sends your API key in plaintext.
+              </ThemedText>
+            </View>
+          )}
+
+          <ThemedText type="caption">PUSH RELAY URL</ThemedText>
+          <TextInput
+            style={[styles.input, { color: textColor, borderColor: border, backgroundColor: surface }]}
+            placeholder="https://push-relay.example.workers.dev"
+            placeholderTextColor={secondaryText}
+            value={pushRelayUrl}
+            onChangeText={setPushRelayUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            testID="instance-push-relay-url-input"
+          />
+          <ThemedText style={{ color: secondaryText, fontSize: FontSize.sm }}>
+            Optional Cloudflare Worker for Alertmanager push notifications.
+            Leave blank to use the app default or disable push for this instance.
+          </ThemedText>
+          {insecurePushRelayScheme && (
+            <View style={[styles.statusBanner, { backgroundColor: warningColor + "18", borderColor: warningColor + "44" }]} testID="insecure-push-relay-scheme-warning">
+              <ThemedText style={{ color: warningColor, fontSize: FontSize.sm }}>
+                Use https:// — push registration sends a device secret.
               </ThemedText>
             </View>
           )}

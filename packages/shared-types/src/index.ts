@@ -50,6 +50,10 @@ export type SigNozInstance = {
   apiKey: string;
   // Optional explicit OTLP ingestion URL. Falls back to `baseUrl` when absent.
   otlpUrl?: string;
+  // Optional per-instance push-relay base URL (no trailing slash). Falls back
+  // to the build-time `expo.extra.pushRelayUrl` when absent. Null/empty means
+  // push notifications are disabled for this instance.
+  pushRelayUrl?: string;
 };
 
 export type ChartPoint = {
