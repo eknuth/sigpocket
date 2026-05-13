@@ -22,7 +22,7 @@ import Sparkline from "../components/Sparkline.astro";
             <span class="text-text-muted">v</span>
             <span class="text-text tabular">0.0.1</span>
             <span class="text-text-muted">·</span>
-            <span>shipping to play store</span>
+            <span>shipping to app stores</span>
           </div>
 
           <h1 class="text-[40px] sm:text-[60px] lg:text-[76px] leading-[0.95] font-semibold tracking-tight">
@@ -43,28 +43,33 @@ import Sparkline from "../components/Sparkline.astro";
 
           <RedTicker />
 
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2 sm:gap-3">
             <a
               href="https://github.com/eknuth/sigpocket"
               target="_blank"
               rel="noopener"
-              class="group inline-flex items-center gap-2.5 px-5 h-12 rounded-xl bg-brand text-white font-medium text-[15px] brand-glow hover:bg-brand-hi transition-colors"
+              class="group inline-flex items-center gap-2 px-4 sm:px-5 h-12 rounded-xl bg-brand text-white font-medium text-[14px] sm:text-[15px] brand-glow hover:bg-brand-hi transition-colors"
             >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.68 0-1.26.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.5 3.16-1.18 3.16-1.18.63 1.58.24 2.75.11 3.04.74.8 1.18 1.82 1.18 3.08 0 4.42-2.69 5.39-5.25 5.67.41.35.78 1.05.78 2.12v3.14c0 .31.2.67.79.55A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/>
               </svg>
               Star on GitHub
-              <svg class="w-3.5 h-3.5 -mr-0.5 opacity-70 group-hover:translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6"/>
-              </svg>
             </a>
 
-            <span class="inline-flex items-center gap-2 px-4 h-12 rounded-xl border border-border bg-surface-2 text-text-secondary text-[13px]">
+            <span class="inline-flex items-center gap-2 px-3 sm:px-4 h-12 rounded-xl border border-border bg-surface-2 text-text-secondary text-[12px] sm:text-[13px] whitespace-nowrap">
               <svg class="w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M3.6 1.6a1 1 0 0 0-1 1v18.8a1 1 0 0 0 1 1c.18 0 .35-.05.5-.13l11-9.4-11-9.4a1 1 0 0 0-.5-.27zm12.7 8.1L19.9 8a1 1 0 0 1 0 1.7l-3.6 1.7-2.9-2.5 2.9-1.2zm-1.7 2.6L13 16l-7-6 1.6-.5 7 3.1z"/>
               </svg>
-              <span class="font-mono text-[12px] uppercase tracking-widest text-text-muted">soon</span>
-              <span>on Google Play</span>
+              <span class="font-mono text-[11px] sm:text-[12px] uppercase tracking-widest text-text-muted">soon</span>
+              <span>Play Store</span>
+            </span>
+
+            <span class="inline-flex items-center gap-2 px-3 sm:px-4 h-12 rounded-xl border border-border bg-surface-2 text-text-secondary text-[12px] sm:text-[13px] whitespace-nowrap">
+              <svg class="w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12.152 6.896c-.548 0-1.711-.516-2.861-.516-1.514 0-2.89 1.054-3.67 2.433-1.55 2.767-.394 6.871 1.116 9.105.738 1.083 1.63 2.301 2.793 2.301 1.116 0 1.539-.754 2.883-.754 1.346 0 1.725.754 2.894.754 1.153 0 1.933-1.083 2.67-2.301.845-1.24 1.205-2.452 1.225-2.514-.026-.011-2.362-.914-2.385-3.61-.025-2.257 1.848-3.336 1.935-3.393-1.047-1.554-2.678-1.705-3.254-1.705-1.393 0-2.733.914-2.733.914-.002 0-.613-.914-2.613-.914zm3.012-4.148c.613-.745 1.018-1.777.9-2.748-.829.034-1.83.564-2.422 1.258-.533.619-.997 1.673-.873 2.622.923.072 1.782-.387 2.395-1.132z"/>
+              </svg>
+              <span class="font-mono text-[11px] sm:text-[12px] uppercase tracking-widest text-text-muted">soon</span>
+              <span>App Store</span>
             </span>
           </div>
 
@@ -419,8 +424,7 @@ import Sparkline from "../components/Sparkline.astro";
           Install from the store.
         </h3>
         <p class="mt-2 text-text-secondary text-[14px] leading-relaxed">
-          Headed to Internal Testing on Google Play.
-          iOS via TestFlight after that.
+          Internal Testing on Google Play & iOS TestFlight coming soon.
         </p>
 
         <div class="mt-auto pt-6 grid grid-cols-2 gap-3">
@@ -433,8 +437,8 @@ import Sparkline from "../components/Sparkline.astro";
           <div class="rounded-xl border border-border bg-surface px-4 py-4 relative">
             <div class="font-mono text-[10px] tracking-widest uppercase text-text-muted">ios</div>
             <div class="mt-1 text-[15px] font-medium">TestFlight</div>
-            <div class="mt-2 font-mono text-[10px] text-text-muted">queued</div>
-            <div class="absolute top-2.5 right-2.5 inline-flex items-center px-1.5 py-0.5 rounded bg-surface-3 text-text-muted font-mono text-[9px] tracking-widest">later</div>
+            <div class="mt-2 font-mono text-[10px] text-warning">internal testing &middot; soon</div>
+            <div class="absolute top-2.5 right-2.5 inline-flex items-center px-1.5 py-0.5 rounded bg-warning/15 text-warning font-mono text-[9px] tracking-widest">soon</div>
           </div>
         </div>
       </div>
