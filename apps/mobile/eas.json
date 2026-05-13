@@ -27,12 +27,10 @@
         "appleId": "eknuth@gmail.com",
         "ascAppId": "6768880548",
         "appleTeamId": "XK3FY8QSZ7",
-        "ascApiKeyPath": "/Users/eknuth/.eas/sigpocket/AuthKey_46F956V753.p8",
         "ascApiKeyId": "46F956V753",
         "ascApiKeyIssuerId": "f6b148e6-1db4-4d5a-a166-f36b4ad86423"
       },
       "android": {
-        "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal"
       }
     }
