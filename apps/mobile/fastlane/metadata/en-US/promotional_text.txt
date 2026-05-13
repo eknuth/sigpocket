@@ -1,0 +1,1 @@
+Mobile SigNoz client. Open source, no account, no telemetry. Connect to any SigNoz and watch your services from anywhere.

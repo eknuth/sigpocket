@@ -1,0 +1,205 @@
+default_platform(:ios)
+
+API_KEY = {
+  key_id: "46F956V753",
+  issuer_id: "f6b148e6-1db4-4d5a-a166-f36b4ad86423",
+  key: File.read("/Users/eknuth/.eas/sigpocket/AuthKey_46F956V753.p8"),
+  duration: 1200,
+  in_house: false
+}
+
+def auth_spaceship
+  require 'spaceship'
+  token = Spaceship::ConnectAPI::Token.create(
+    key_id: API_KEY[:key_id],
+    issuer_id: API_KEY[:issuer_id],
+    key: API_KEY[:key],
+    duration: API_KEY[:duration],
+    in_house: API_KEY[:in_house]
+  )
+  Spaceship::ConnectAPI.token = token
+end
+
+platform :ios do
+  desc "Set pricing to free using the appPriceSchedules API"
+  lane :set_pricing do
+    auth_spaceship
+    app = Spaceship::ConnectAPI::App.find("com.sigpocket.mobile")
+    UI.message("Found app: #{app.name} (id=#{app.id})")
+
+    client = Spaceship::ConnectAPI.tunes_request_client
+
+    # Query for the free price point (tier 0) in USA
+    pp_resp = client.get("v1/apps/#{app.id}/appPricePoints?filter[territory]=USA")
+    free_pp = pp_resp.body["data"].find { |pp| pp["attributes"]["customerPrice"] == "0" || pp["attributes"]["customerPrice"] == "0.00" || pp["attributes"]["customerPrice"].to_f == 0.0 }
+    raise "Could not find free price point" if free_pp.nil?
+    free_pp_id = free_pp["id"]
+    UI.message("Free appPricePoint id: #{free_pp_id}")
+
+    body = {
+      data: {
+        type: "appPriceSchedules",
+        relationships: {
+          app: { data: { type: "apps", id: app.id } },
+          baseTerritory: { data: { type: "territories", id: "USA" } },
+          manualPrices: {
+            data: [{ type: "appPrices", id: "${price1}" }]
+          }
+        }
+      },
+      included: [{
+        id: "${price1}",
+        type: "appPrices",
+        attributes: { startDate: nil },
+        relationships: {
+          appPricePoint: { data: { type: "appPricePoints", id: free_pp_id } },
+          territory: { data: { type: "territories", id: "USA" } }
+        }
+      }]
+    }
+    resp = client.post("v1/appPriceSchedules", body)
+    UI.message("Created appPriceSchedule")
+  end
+
+  desc "Manually submit the existing reviewSubmission to Apple"
+  lane :submit_review do
+    auth_spaceship
+    app = Spaceship::ConnectAPI::App.find("com.sigpocket.mobile")
+    client = Spaceship::ConnectAPI.tunes_request_client
+
+    rs = client.get("v1/apps/#{app.id}/reviewSubmissions?filter[state]=READY_FOR_REVIEW")
+    raise "No READY_FOR_REVIEW submission found" if rs.body['data'].empty?
+    submission_id = rs.body['data'].first['id']
+    UI.message("Found reviewSubmission: #{submission_id}")
+
+    body = {
+      data: {
+        type: "reviewSubmissions",
+        id: submission_id,
+        attributes: { submitted: true }
+      }
+    }
+    resp = client.patch("v1/reviewSubmissions/#{submission_id}", body)
+    UI.message("Submitted: #{resp.body['data']['attributes']['state']}")
+  end
+
+  desc "Inspect current state and any issues blocking submission"
+  lane :inspect do
+    auth_spaceship
+    app = Spaceship::ConnectAPI::App.find("com.sigpocket.mobile")
+    UI.message("App: #{app.name} (id=#{app.id})")
+    client = Spaceship::ConnectAPI.tunes_request_client
+
+    # Get versions
+    versions = client.get("v1/apps/#{app.id}/appStoreVersions")
+    versions.body["data"].each do |v|
+      attrs = v["attributes"]
+      UI.message("Version #{attrs['versionString']} (#{attrs['platform']}): appStoreState=#{attrs['appStoreState']} appVersionState=#{attrs['appVersionState']}")
+      UI.message("  id: #{v['id']}")
+    end
+
+    # Try the reviewSubmission validation endpoint
+    rs = client.get("v1/apps/#{app.id}/reviewSubmissions?filter[state]=READY_FOR_REVIEW,WAITING_FOR_REVIEW,IN_REVIEW,UNRESOLVED_ISSUES,COMPLETING")
+    UI.message("review submissions: #{rs.body['data'].length}")
+    rs.body['data'].each { |r| UI.message("  rs id=#{r['id']} state=#{r['attributes']['state']}") }
+
+    # Check app privacy via appInfo
+    app_info = client.get("v1/apps/#{app.id}/appInfos")
+    app_info.body['data'].each do |info|
+      UI.message("AppInfo #{info['id']}: state=#{info['attributes']['state']} appStoreState=#{info['attributes']['appStoreState']}")
+    end
+
+    # Check if app pricing is set
+    pp = client.get("v1/apps/#{app.id}/appPriceSchedule")
+    UI.message("Pricing schedule: #{pp.body['data'].inspect[0..200] rescue 'none'}")
+  end
+
+  desc "Publish App Privacy answers (no data collected)"
+  lane :set_privacy do
+    auth_spaceship
+    app = Spaceship::ConnectAPI::App.find("com.sigpocket.mobile")
+    UI.message("Found app: #{app.name} (id=#{app.id})")
+    client = Spaceship::ConnectAPI.tunes_request_client
+
+    # Print the apps resource attributes/relationships so we can see available link names
+    r = client.get("v1/apps/#{app.id}")
+    UI.message("App relationships: #{r.body['data']['relationships'].keys.inspect}")
+
+    # Check appInfos relationships (privacy might live there)
+    ai = client.get("v1/apps/#{app.id}/appInfos")
+    ai_id = ai.body['data'].first['id']
+    UI.message("AppInfo id: #{ai_id}")
+    aifull = client.get("v1/appInfos/#{ai_id}")
+    UI.message("AppInfo relationships: #{aifull.body['data']['relationships'].keys.inspect}")
+    UI.message("AppInfo attributes: #{aifull.body['data']['attributes'].keys.inspect}")
+
+    # New privacy endpoint names per recent ASC docs:
+    candidates = [
+      "v1/apps/#{app.id}/appPrivacyChoices",
+      "v1/apps/#{app.id}/dataUsageCollections",
+      "v1/apps/#{app.id}/dataPolicies",
+      "v1/apps/#{app.id}/privacyPolicy",
+      "v1/apps/#{app.id}/privacyPolicies",
+      "v1/apps/#{app.id}/privacyAnswers",
+      "v1/apps/#{app.id}/appPrivacyDetail",
+    ]
+    candidates.each do |path|
+      begin
+        r = client.get(path)
+        UI.message("OK #{path}: #{r.body.to_s[0..400]}")
+      rescue => e
+        UI.message("FAIL #{path}: #{e.message[0..80]}")
+      end
+    end
+  end
+
+  desc "Upload metadata and screenshots to App Store Connect"
+  lane :upload_metadata do
+    deliver(
+      api_key: API_KEY,
+      app_identifier: "com.sigpocket.mobile",
+      app_version: "1.0",
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      skip_metadata: false,
+      force: true,
+      precheck_include_in_app_purchases: false,
+      submit_for_review: false,
+      automatic_release: false,
+      run_precheck_before_submit: false,
+      app_rating_config_path: "./fastlane/age_ratings.json"
+    )
+  end
+
+  desc "Find the latest TestFlight build and submit it for App Review"
+  lane :submit do
+    latest_build = latest_testflight_build_number(
+      api_key: API_KEY,
+      app_identifier: "com.sigpocket.mobile",
+      version: "1.0",
+      initial_build_number: 0
+    )
+    UI.message("Latest TestFlight build number: #{latest_build}")
+
+    deliver(
+      api_key: API_KEY,
+      app_identifier: "com.sigpocket.mobile",
+      app_version: "1.0",
+      build_number: latest_build.to_s,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      force: true,
+      submit_for_review: true,
+      automatic_release: true,
+      submission_information: {
+        export_compliance_uses_encryption: false,
+        export_compliance_encryption_updated: false,
+        add_id_info_uses_idfa: false,
+        content_rights_contains_third_party_content: false
+      },
+      run_precheck_before_submit: false,
+      precheck_include_in_app_purchases: false
+    )
+  end
+end

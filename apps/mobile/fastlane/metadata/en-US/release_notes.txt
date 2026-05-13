@@ -1,0 +1,1 @@
+Initial release. Connect to any SigNoz instance and monitor services, latency, and errors from your phone.

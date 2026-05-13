@@ -1,0 +1,12 @@
+SigPocket is a BYO-SigNoz mobile client. There is no account system; instead, the app prompts the user to enter a SigNoz instance URL and API key on first launch.
+
+For review purposes you can use the following demo SigNoz instance:
+  URL: https://signoz.codetomuscle.com
+  API Key: please contact eknuth@gmail.com for a temporary review key
+
+Or, on the onboarding screen, you can tap the (i) info button and walk through the placeholder onboarding without entering credentials to see settings, the empty services state, and the appearance/instance management screens.
+
+Source code: https://github.com/eknuth/sigpocket
+Privacy policy: https://sigpocket.com/privacy/
+
+The app sends HTTPS requests only to the SigNoz URL provided by the user. There is no SigPocket-operated backend and no analytics. All credentials are stored in iOS Keychain Services. The app declares ITSAppUsesNonExemptEncryption=false (HTTPS only, no proprietary cryptography).

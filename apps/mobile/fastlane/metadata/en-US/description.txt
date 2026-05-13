@@ -1,0 +1,14 @@
+SigPocket is an open-source mobile client for SigNoz. Connect to any self-hosted or cloud SigNoz instance and get a real-time view of service health using the RED method (Rate, Errors, Duration).
+
+Features
+- BYO SigNoz: connect any SigNoz instance with a URL and API key
+- Services overview: sortable list with status indicators and RED metrics
+- Service detail: p95 latency line chart with 1h, 6h, and 24h time ranges
+- Multiple instances: manage and switch between SigNoz environments
+- Dark and light mode following the system theme
+- Pull-to-refresh with 30s auto-refresh
+
+Privacy
+SigPocket does not collect any data about you, your device, or your usage. There is no SigPocket account and no SigPocket backend. The app sends HTTPS requests only to the SigNoz URL you provide. Credentials are stored in the device secure keychain (iOS Keychain Services). See https://sigpocket.com/privacy/ for details.
+
+This app pairs well with engineers who run SigNoz to monitor microservices, APIs, and background jobs.
