@@ -19,6 +19,7 @@ type InstanceFormValues = {
   baseUrl: string;
   apiKey: string;
   otlpUrl?: string;
+  ingestionKey?: string;
 };
 
 type Props = {
@@ -38,7 +39,10 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
   const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
   const [apiKey, setApiKey] = useState(initial?.apiKey ?? "");
   const [otlpUrl, setOtlpUrl] = useState(initial?.otlpUrl ?? "");
-  const [advancedOpen, setAdvancedOpen] = useState(Boolean(initial?.otlpUrl));
+  const [ingestionKey, setIngestionKey] = useState(initial?.ingestionKey ?? "");
+  const [advancedOpen, setAdvancedOpen] = useState(
+    Boolean(initial?.otlpUrl || initial?.ingestionKey),
+  );
   const [status, setStatus] = useState<ConnectionStatus>({ state: "idle" });
 
   const tint = useThemeColor({}, "tint");
@@ -86,6 +90,7 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
       baseUrl: normalizedUrl,
       apiKey,
       otlpUrl: normalizedOtlpUrl.length > 0 ? normalizedOtlpUrl : undefined,
+      ingestionKey: ingestionKey.trim().length > 0 ? ingestionKey.trim() : undefined,
     });
   }
 
@@ -192,6 +197,27 @@ export function InstanceForm({ initial, onSave, submitLabel = "Save" }: Props) {
               </ThemedText>
             </View>
           )}
+        </View>
+      )}
+
+      {advancedOpen && (
+        <View style={styles.field}>
+          <ThemedText type="caption">INGESTION KEY (OPTIONAL)</ThemedText>
+          <TextInput
+            style={[styles.input, { color: textColor, borderColor: border, backgroundColor: surface }]}
+            placeholder="Same as API Key if blank"
+            placeholderTextColor={secondaryText}
+            value={ingestionKey}
+            onChangeText={setIngestionKey}
+            autoCapitalize="none"
+            autoCorrect={false}
+            secureTextEntry
+            testID="instance-ingestion-key-input"
+          />
+          <ThemedText style={{ color: secondaryText, fontSize: FontSize.sm }}>
+            Used for OTLP ingestion (/v1/traces). Leave blank to reuse the
+            API Key above.
+          </ThemedText>
         </View>
       )}
 

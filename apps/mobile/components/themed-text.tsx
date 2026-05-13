@@ -1,12 +1,20 @@
 import { StyleSheet, Text, type TextProps } from "react-native";
 
-import { Brand, FontSize } from "@/constants/theme";
+import { Brand, FontFamily, FontSize } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: "default" | "title" | "defaultSemiBold" | "subtitle" | "link" | "caption" | "mono";
+  type?:
+    | "default"
+    | "title"
+    | "defaultSemiBold"
+    | "subtitle"
+    | "link"
+    | "caption"
+    | "mono"
+    | "monoSemibold";
 };
 
 export function ThemedText({
@@ -30,6 +38,7 @@ export function ThemedText({
         type === "link" ? [styles.link, { color: Brand.robin400 }] : undefined,
         type === "caption" ? [styles.caption, { color: secondaryColor }] : undefined,
         type === "mono" ? styles.mono : undefined,
+        type === "monoSemibold" ? styles.monoSemibold : undefined,
         style,
       ]}
       {...rest}
@@ -39,34 +48,45 @@ export function ThemedText({
 
 const styles = StyleSheet.create({
   default: {
+    fontFamily: FontFamily.sans,
     fontSize: FontSize.base,
     lineHeight: 24,
   },
   defaultSemiBold: {
+    fontFamily: FontFamily.sansSemibold,
     fontSize: FontSize.base,
     lineHeight: 24,
-    fontWeight: "600",
   },
   title: {
+    fontFamily: FontFamily.sansBold,
     fontSize: FontSize.display,
-    fontWeight: "bold",
     lineHeight: 40,
+    letterSpacing: -0.5,
   },
   subtitle: {
+    fontFamily: FontFamily.sansBold,
     fontSize: FontSize.xl,
-    fontWeight: "bold",
+    lineHeight: FontSize.xl + 6,
+    letterSpacing: -0.3,
   },
   link: {
+    fontFamily: FontFamily.sansMedium,
     lineHeight: 24,
     fontSize: FontSize.base,
   },
   caption: {
+    fontFamily: FontFamily.sans,
     fontSize: FontSize.sm,
     lineHeight: 20,
   },
   mono: {
+    fontFamily: FontFamily.mono,
     fontSize: FontSize.sm,
     lineHeight: 20,
-    fontFamily: "monospace",
+  },
+  monoSemibold: {
+    fontFamily: FontFamily.monoSemibold,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
 });

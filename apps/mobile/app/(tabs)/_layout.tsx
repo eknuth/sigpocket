@@ -1,45 +1,18 @@
 import { Tabs } from "expo-router";
 
-import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { FloatingTabBar } from "@/components/floating-tab-bar";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "dark"];
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.tint,
-        tabBarInactiveTintColor: theme.tabIconDefault,
-        tabBarStyle: {
-          backgroundColor: theme.surface,
-          borderTopColor: theme.borderSubtle,
-        },
-        headerStyle: {
-          backgroundColor: theme.surface,
-        },
-        headerTintColor: theme.text,
-        headerShown: true,
-        tabBarButton: HapticTab,
+        headerShown: false,
+        sceneStyle: { backgroundColor: "transparent" },
       }}
+      tabBar={(props) => <FloatingTabBar {...props} />}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Services",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: "Services" }} />
+      <Tabs.Screen name="settings" options={{ title: "Settings" }} />
     </Tabs>
   );
 }

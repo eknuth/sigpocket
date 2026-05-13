@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  Animated,
   FlatList,
   Pressable,
   RefreshControl,
@@ -11,6 +10,9 @@ import {
 } from "react-native";
 import type { TraceListItem } from "@sigpocket/shared-types";
 
+import { Chip } from "@/components/chip";
+import { ScreenHeader } from "@/components/screen-header";
+import { Shimmer, useShimmerOpacity } from "@/components/shimmer";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Brand, FontSize, Radius, Space } from "@/constants/theme";
@@ -18,7 +20,6 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 import { useSignozClient } from "@/hooks/use-signoz-client";
 import { useInstanceStore } from "@/stores/instance-store";
 
-// ── Filters ───────────────────────────────────────────────────
 
 type TimeRange = { label: string; hours: number };
 
@@ -35,7 +36,6 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
   errors: "Errors only",
 };
 
-// ── Screen ────────────────────────────────────────────────────
 
 export default function TracesListScreen() {
   const { service } = useLocalSearchParams<{ service: string }>();
@@ -48,10 +48,7 @@ export default function TracesListScreen() {
   const range = TIME_RANGES[rangeIdx];
 
   const tint = useThemeColor({}, "tint");
-  const surface = useThemeColor({}, "surfaceRaised");
-  const border = useThemeColor({}, "borderSubtle");
   const errorColor = useThemeColor({}, "error");
-  const secondaryText = useThemeColor({}, "textSecondary");
 
   const {
     data: traces,
@@ -89,82 +86,49 @@ export default function TracesListScreen() {
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={tint} />
         }
         ListHeaderComponent={
-          <View style={styles.header}>
-            <ThemedText type="subtitle" numberOfLines={2}>
-              {service}
-            </ThemedText>
-            <ThemedText type="caption" style={{ color: secondaryText }}>
-              Recent traces
-            </ThemedText>
-
-            <View style={styles.filterRow}>
-              {TIME_RANGES.map((r, i) => {
-                const active = i === rangeIdx;
-                return (
-                  <Pressable
+          <View>
+            <ScreenHeader
+              back
+              eyebrow="Recent traces"
+              title={service}
+              subtitle={`Last ${range.label} · ${STATUS_LABELS[statusFilter]}`}
+              paddedSides={false}
+            />
+            <View style={styles.header}>
+              <View style={styles.filterRow}>
+                {TIME_RANGES.map((r, i) => (
+                  <Chip
                     key={r.label}
-                    onPress={() => setRangeIdx(i)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: active ? tint + "22" : "transparent",
-                        borderColor: active ? tint : border,
-                      },
-                    ]}
+                    value={i}
+                    label={r.label}
+                    active={i === rangeIdx}
+                    onPress={setRangeIdx}
                     testID={`range-${r.label}`}
-                  >
-                    <ThemedText
-                      style={{
-                        fontSize: FontSize.xs,
-                        fontWeight: active ? "600" : "400",
-                        color: active ? tint : undefined,
-                      }}
-                    >
-                      {r.label}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={styles.filterRow}>
-              {(Object.keys(STATUS_LABELS) as StatusFilter[]).map((key) => {
-                const active = key === statusFilter;
-                return (
-                  <Pressable
+                  />
+                ))}
+              </View>
+              <View style={styles.filterRow}>
+                {(Object.keys(STATUS_LABELS) as StatusFilter[]).map((key) => (
+                  <Chip
                     key={key}
-                    onPress={() => setStatusFilter(key)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: active ? tint + "22" : "transparent",
-                        borderColor: active ? tint : border,
-                      },
-                    ]}
+                    value={key}
+                    label={STATUS_LABELS[key]}
+                    active={key === statusFilter}
+                    onPress={setStatusFilter}
                     testID={`status-${key}`}
-                  >
-                    <ThemedText
-                      style={{
-                        fontSize: FontSize.xs,
-                        fontWeight: active ? "600" : "400",
-                        color: active ? tint : undefined,
-                      }}
-                    >
-                      {STATUS_LABELS[key]}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
+                  />
+                ))}
+              </View>
             </View>
           </View>
         }
         ListEmptyComponent={
           isLoading ? (
             <View style={styles.skeletonList}>
-              <SkeletonCard surface={surface} border={border} />
-              <SkeletonCard surface={surface} border={border} />
-              <SkeletonCard surface={surface} border={border} />
-              <SkeletonCard surface={surface} border={border} />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
             </View>
           ) : error ? (
             <View style={styles.errorState}>
@@ -194,9 +158,6 @@ export default function TracesListScreen() {
         renderItem={({ item }) => (
           <TraceCard
             item={item}
-            surface={surface}
-            border={border}
-            tint={tint}
             onPress={() =>
               router.push({ pathname: "/trace/[id]", params: { id: item.traceID } })
             }
@@ -207,23 +168,19 @@ export default function TracesListScreen() {
   );
 }
 
-// ── Trace card ────────────────────────────────────────────────
 
 function TraceCard({
   item,
-  surface,
-  border,
-  tint,
   onPress,
 }: {
   item: TraceListItem;
-  surface: string;
-  border: string;
-  tint: string;
   onPress: () => void;
 }) {
-  const dotColor = item.hasError ? Brand.red400 : tint;
+  const surface = useThemeColor({}, "surfaceRaised");
+  const border = useThemeColor({}, "borderSubtle");
+  const tint = useThemeColor({}, "tint");
   const secondary = useThemeColor({}, "textSecondary");
+  const dotColor = item.hasError ? Brand.red400 : tint;
 
   return (
     <Pressable
@@ -261,37 +218,23 @@ function TraceCard({
   );
 }
 
-// ── Skeleton ──────────────────────────────────────────────────
 
-function SkeletonCard({ surface, border }: { surface: string; border: string }) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ]),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [opacity]);
-
+function SkeletonCard() {
+  const surface = useThemeColor({}, "surfaceRaised");
+  const border = useThemeColor({}, "borderSubtle");
+  const opacity = useShimmerOpacity();
   return (
     <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
       <View style={styles.cardTop}>
-        <Animated.View
-          style={[styles.skeletonBar, { width: 10, height: 10, borderRadius: 5, opacity }]}
-        />
-        <Animated.View style={[styles.skeletonBar, { flex: 1, opacity }]} />
-        <Animated.View style={[styles.skeletonBar, { width: 56, opacity }]} />
+        <Shimmer width={10} height={10} radius={5} opacity={opacity} />
+        <Shimmer width="60%" opacity={opacity} />
+        <Shimmer width={56} opacity={opacity} />
       </View>
-      <Animated.View style={[styles.skeletonBar, { width: "40%", height: 10, opacity }]} />
+      <Shimmer width="40%" height={10} opacity={opacity} />
     </View>
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────
 
 function formatTimestamp(iso: string): string {
   const d = new Date(iso);
@@ -306,7 +249,6 @@ function formatTimestamp(iso: string): string {
   return d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// ── Styles ────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -320,23 +262,18 @@ const styles = StyleSheet.create({
     gap: Space.lg,
   },
   list: {
-    padding: Space.lg,
+    paddingHorizontal: Space.lg,
+    paddingBottom: 160,
     gap: Space.md,
   },
   header: {
     gap: Space.sm,
-    marginBottom: Space.sm,
+    marginBottom: Space.md,
   },
   filterRow: {
     flexDirection: "row",
     gap: Space.sm,
     flexWrap: "wrap",
-  },
-  chip: {
-    paddingHorizontal: Space.md,
-    paddingVertical: Space.xs,
-    borderRadius: Radius.full,
-    borderWidth: 1,
   },
   card: {
     borderWidth: 1,
@@ -361,11 +298,6 @@ const styles = StyleSheet.create({
   },
   skeletonList: {
     gap: Space.md,
-  },
-  skeletonBar: {
-    height: 14,
-    borderRadius: Radius.sm,
-    backgroundColor: "#4668DC33",
   },
   emptyState: {
     paddingVertical: Space.xxxl,

@@ -1,12 +1,16 @@
 /**
- * SigPocket design tokens — aligned with SigNoz's dark-first design language.
+ * SigPocket design tokens.
  *
- * SigNoz palette reference:
- *   Robin (brand blue): #4668DC
- *   Sakura (accent pink): #F24769
- *   Ink (backgrounds): 500→100 from darkest to lighter
- *   Vanilla (text): 100 = bright, 400 = muted
- *   Slate (borders/secondary): 200–500
+ * Concept: pocket telemetry — an instrument panel for SREs.
+ * Dark-first, data-dense, with one decisive brand accent and tabular
+ * monospace numerics everywhere data lives.
+ *
+ * Typography:
+ *   - Geist (sans) for UI, titles, body
+ *   - Geist Mono for all data: latencies, error rates, IDs, timestamps
+ *
+ * Palette draws from SigNoz (Robin / Sakura) but pushes the dark surfaces
+ * deeper so cards and the floating tab bar separate visually.
  */
 
 import { Platform } from "react-native";
@@ -20,6 +24,7 @@ export const Brand = {
   sakura500: "#F24769",
   sakura400: "#F56B87",
   amber500: "#F59E0B",
+  amber400: "#FBBF24",
   green500: "#22C55E",
   green400: "#4ADE80",
   red500: "#EF4444",
@@ -30,36 +35,45 @@ export const Brand = {
 
 export const Colors = {
   light: {
-    text: "#1E293B",
+    text: "#0F172A",
     textSecondary: "#475569",
+    textMuted: "#64748B",
     background: "#F8FAFC",
+    backgroundElevated: "#FFFFFF",
     surface: "#FFFFFF",
     surfaceRaised: "#F1F5F9",
+    surfaceFloat: "#FFFFFFEE",
     border: "#CBD5E1",
     borderSubtle: "#E2E8F0",
     tint: Brand.robin500,
+    tintGlow: "#4668DC33",
     icon: "#64748B",
-    tabIconDefault: "#64748B",
+    tabIconDefault: "#94A3B8",
     tabIconSelected: Brand.robin500,
     success: Brand.green500,
     error: Brand.red500,
     warning: Brand.amber500,
   },
   dark: {
-    text: "#E2E8F0",
-    textSecondary: "#94A3B8",
-    background: "#0B0C0E",
-    surface: "#121317",
-    surfaceRaised: "#1A1C23",
-    border: "#2D3039",
-    borderSubtle: "#23252D",
-    tint: Brand.robin400,
-    icon: "#64748B",
-    tabIconDefault: "#64748B",
-    tabIconSelected: Brand.robin400,
+    // Deepest layer — the void behind everything
+    text: "#E6EAF2",
+    textSecondary: "#9BA3B4",
+    textMuted: "#5F6776",
+    background: "#07080B",
+    backgroundElevated: "#0E1014",
+    surface: "#13151B",
+    surfaceRaised: "#191C24",
+    surfaceFloat: "#1A1D26E6", // translucent for the floating tab bar
+    border: "#262A35",
+    borderSubtle: "#1E2129",
+    tint: "#7691EB",
+    tintGlow: "#7691EB40",
+    icon: "#6B7383",
+    tabIconDefault: "#5F6776",
+    tabIconSelected: "#7691EB",
     success: Brand.green400,
     error: Brand.red400,
-    warning: Brand.amber500,
+    warning: Brand.amber400,
   },
 } as const;
 
@@ -82,29 +96,73 @@ export const Radius = {
   md: 10,
   lg: 14,
   xl: 20,
+  xxl: 28,
   full: 9999,
 } as const;
 
-// ── Typography ────────────────────────────────────────────────
+// ── Elevation / glow shadows ──────────────────────────────────
+// Use sparingly. The tab bar gets one. Critical service cards
+// get a faint red one. Everything else stays flat.
 
+export const Shadow = {
+  floatDark: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  tintGlow: {
+    shadowColor: "#4668DC",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  criticalGlow: {
+    shadowColor: "#F87171",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+} as const;
+
+// ── Typography ────────────────────────────────────────────────
+// Geist (sans) and Geist Mono are loaded via @expo-google-fonts
+// in app/_layout.tsx. Weight is encoded in the family name, per
+// React Native's font-handling on Android.
+
+export const FontFamily = {
+  sans: "Geist_400Regular",
+  sansMedium: "Geist_500Medium",
+  sansSemibold: "Geist_600SemiBold",
+  sansBold: "Geist_700Bold",
+  mono: "GeistMono_400Regular",
+  monoMedium: "GeistMono_500Medium",
+  monoSemibold: "GeistMono_600SemiBold",
+} as const;
+
+// Kept for any consumers still reading Fonts — same values, expressed
+// as the canonical Android-style family names so weights resolve.
 export const Fonts = Platform.select({
   ios: {
-    sans: "system-ui",
+    sans: FontFamily.sans,
+    rounded: FontFamily.sans,
+    mono: FontFamily.mono,
     serif: "ui-serif",
-    rounded: "ui-rounded",
-    mono: "ui-monospace",
   },
   default: {
-    sans: "normal",
+    sans: FontFamily.sans,
+    rounded: FontFamily.sans,
+    mono: FontFamily.mono,
     serif: "serif",
-    rounded: "normal",
-    mono: "monospace",
   },
   web: {
-    sans: "'Fira Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', sans-serif",
-    mono: "'Fira Code', SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    sans: "Geist, system-ui, -apple-system, sans-serif",
+    rounded: "Geist, system-ui, sans-serif",
+    mono: "'Geist Mono', SFMono-Regular, Menlo, monospace",
+    serif: "Georgia, serif",
   },
 });
 
@@ -116,4 +174,5 @@ export const FontSize = {
   xl: 22,
   xxl: 28,
   display: 34,
+  hero: 44,
 } as const;

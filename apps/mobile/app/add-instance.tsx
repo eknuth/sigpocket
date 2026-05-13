@@ -16,6 +16,7 @@ export default function AddInstanceScreen() {
     baseUrl: string;
     apiKey: string;
     otlpUrl?: string;
+    ingestionKey?: string;
   }) {
     await addInstance({ id: randomId(), ...values });
     router.back();

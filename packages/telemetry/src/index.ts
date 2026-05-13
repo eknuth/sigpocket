@@ -176,21 +176,28 @@ async function flush() {
   // Fall back to `baseUrl` to preserve behavior for existing configs.
   const ingestBase = (config.otlpUrl ?? config.baseUrl).replace(/\/+$/, "");
 
+  // If a dedicated ingestion key was set, use it on /v1/traces; otherwise
+  // fall back to the query API key. Send under both header names so it
+  // works on Cloud and self-hosted without further config.
+  const ingestKey = config.ingestionKey ?? config.apiKey;
+
   try {
     await fetch(`${ingestBase}/v1/traces`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "SIGNOZ-API-KEY": config.apiKey,
+        "signoz-ingestion-key": ingestKey,
+        "SIGNOZ-API-KEY": ingestKey,
       },
       body: JSON.stringify(payload),
     });
   } catch {
-    // Silently drop — telemetry should never crash the app.
-    // Put spans back for retry on next flush.
+    // Telemetry must never crash the app. Push spans back for retry, then
+    // cap by keeping the NEWEST — a permanently-down endpoint shouldn't
+    // pin the buffer on stale data while dropping fresh spans.
     spanBuffer.unshift(...spans);
     if (spanBuffer.length > MAX_BATCH_SIZE * 2) {
-      spanBuffer.length = MAX_BATCH_SIZE;
+      spanBuffer = spanBuffer.slice(-MAX_BATCH_SIZE);
     }
   }
 }

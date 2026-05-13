@@ -27,6 +27,7 @@ export default function EditInstanceScreen() {
     baseUrl: string;
     apiKey: string;
     otlpUrl?: string;
+    ingestionKey?: string;
   }) {
     await updateInstance(id, values);
     router.back();
@@ -41,6 +42,7 @@ export default function EditInstanceScreen() {
             baseUrl: instance.baseUrl,
             apiKey: instance.apiKey,
             otlpUrl: instance.otlpUrl,
+            ingestionKey: instance.ingestionKey,
           }}
           onSave={handleSave}
           submitLabel="Save Changes"

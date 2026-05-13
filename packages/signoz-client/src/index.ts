@@ -1,8 +1,7 @@
+import { traceAsync } from "@sigpocket/telemetry";
 import type {
   SigNozConfig,
   ServiceItem,
-  QueryRangeResponse,
-  QueryRangeValue,
   QueryRangeListResponse,
   ChartPoint,
   TraceListItem,
@@ -32,22 +31,36 @@ export class SigNozClient {
     return Math.floor((Date.now() - hours * 3600_000) / 1000);
   }
 
+  // Wraps every backend call in a span so the app itself shows up in SigNoz
+  // as a real service. Span name reads as `signoz.GET /api/v2/services` etc.
   private async fetch(path: string, body?: unknown): Promise<unknown> {
-    const url = `${this.config.baseUrl}${path}`;
-    const res = await fetch(url, {
-      method: body ? "POST" : "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "SIGNOZ-API-KEY": this.config.apiKey,
-      },
-      body: body ? JSON.stringify(body) : undefined,
-      redirect: "error",
+    const method = body ? "POST" : "GET";
+    return traceAsync(`signoz.${method} ${path}`, async (span) => {
+      span.setAttribute("http.method", method);
+      span.setAttribute("http.url", `${this.config.baseUrl}${path}`);
+      span.setAttribute("signoz.path", path);
+
+      const res = await fetch(`${this.config.baseUrl}${path}`, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          "SIGNOZ-API-KEY": this.config.apiKey,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        redirect: "error",
+      });
+
+      span.setAttribute("http.status_code", res.status);
+
+      if (!res.ok) {
+        const text = (await res.text())
+          .slice(0, 200)
+          .split(this.config.apiKey)
+          .join("[REDACTED]");
+        throw new Error(`SigNoz ${res.status}: ${text}`);
+      }
+      return res.json();
     });
-    if (!res.ok) {
-      const text = (await res.text()).slice(0, 200).split(this.config.apiKey).join("[REDACTED]");
-      throw new Error(`SigNoz ${res.status}: ${text}`);
-    }
-    return res.json();
   }
 
   async fetchServices(hours = 6): Promise<ServiceItem[]> {
@@ -101,12 +114,12 @@ export class SigNozClient {
           },
         },
       },
-    })) as QueryRangeResponse;
+    })) as unknown;
 
-    const series = data?.data?.result?.[0]?.series?.[0];
-    if (!series?.values?.length) return [];
+    const values = extractTimeSeriesValues(data);
+    if (!values.length) return [];
 
-    return series.values.map((v: QueryRangeValue) => ({
+    return values.map((v) => ({
       timestamp: v.timestamp,
       p95: parseFloat(v.value) / 1_000_000, // ns -> ms
     }));
@@ -299,6 +312,37 @@ const LOG_LIST_COLUMNS = [
   { key: "attributes_string", type: "tag", dataType: "string" },
   { key: "resources_string", type: "tag", dataType: "string" },
 ];
+
+// `panelType: "graph"` responses come in two shapes depending on backend
+// version: older deployments return `data.result[].series[].values[]`; newer
+// (v5) returns `data.results[].aggregations[].series[].values[]`. Tolerate
+// both, plus the rarer `data.result[].series[]` with v5 nesting we've seen
+// when the gateway proxies a mixed version.
+function extractTimeSeriesValues(
+  resp: unknown,
+): Array<{ timestamp: number; value: string }> {
+  const r = resp as {
+    data?: {
+      result?: Array<{
+        series?: Array<{ values?: Array<{ timestamp: number; value: string }> }>;
+      }>;
+      results?: Array<{
+        series?: Array<{ values?: Array<{ timestamp: number; value: string }> }>;
+        aggregations?: Array<{
+          series?: Array<{ values?: Array<{ timestamp: number; value: string }> }>;
+        }>;
+      }>;
+    };
+  };
+
+  const candidates = [
+    r.data?.result?.[0]?.series?.[0]?.values,
+    r.data?.results?.[0]?.aggregations?.[0]?.series?.[0]?.values,
+    r.data?.results?.[0]?.series?.[0]?.values,
+  ];
+  for (const c of candidates) if (c?.length) return c;
+  return [];
+}
 
 // SigNoz returned `data.results[].rows[]` in the v5 wire shape we observed,
 // but older deployments may still return `data.result[].list[]`. Tolerate both.

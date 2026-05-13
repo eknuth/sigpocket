@@ -1,3 +1,16 @@
+import {
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_600SemiBold,
+  Geist_700Bold,
+  useFonts as useGeist,
+} from "@expo-google-fonts/geist";
+import {
+  GeistMono_400Regular,
+  GeistMono_500Medium,
+  GeistMono_600SemiBold,
+  useFonts as useGeistMono,
+} from "@expo-google-fonts/geist-mono";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
@@ -8,6 +21,7 @@ import "react-native-reanimated";
 
 import { configureTelemetry } from "@sigpocket/telemetry";
 
+import { AtmosphericBg } from "@/components/atmospheric-bg";
 import { Brand, Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useInstanceStore } from "@/stores/instance-store";
@@ -18,8 +32,8 @@ const SigNozDark = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    primary: Brand.robin400,
-    background: Colors.dark.background,
+    primary: Colors.dark.tint,
+    background: "transparent",
     card: Colors.dark.surface,
     text: Colors.dark.text,
     border: Colors.dark.border,
@@ -31,7 +45,7 @@ const SigNozLight = {
   colors: {
     ...DefaultTheme.colors,
     primary: Brand.robin500,
-    background: Colors.light.background,
+    background: "transparent",
     card: Colors.light.surface,
     text: Colors.light.text,
     border: Colors.light.border,
@@ -50,6 +64,19 @@ function RootNav() {
   const getActive = useInstanceStore((s) => s.getActive);
   const activeInstanceId = useInstanceStore((s) => s.activeInstanceId);
 
+  const [geistLoaded] = useGeist({
+    Geist_400Regular,
+    Geist_500Medium,
+    Geist_600SemiBold,
+    Geist_700Bold,
+  });
+  const [geistMonoLoaded] = useGeistMono({
+    GeistMono_400Regular,
+    GeistMono_500Medium,
+    GeistMono_600SemiBold,
+  });
+  const fontsLoaded = geistLoaded && geistMonoLoaded;
+
   useEffect(() => {
     hydrate();
   }, [hydrate]);
@@ -59,7 +86,12 @@ function RootNav() {
     const active = getActive();
     configureTelemetry(
       active
-        ? { baseUrl: active.baseUrl, apiKey: active.apiKey, otlpUrl: active.otlpUrl }
+        ? {
+            baseUrl: active.baseUrl,
+            apiKey: active.apiKey,
+            otlpUrl: active.otlpUrl,
+            ingestionKey: active.ingestionKey,
+          }
         : null,
     );
   }, [activeInstanceId, getActive]);
@@ -71,31 +103,46 @@ function RootNav() {
     }
   }, [hydrated, instances.length, router]);
 
-  if (!hydrated) {
+  if (!hydrated || !fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.dark.background }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: Colors.dark.background,
+        }}
+      >
+        <AtmosphericBg />
         <ActivityIndicator color={Brand.robin400} size="large" />
       </View>
     );
   }
 
+  const baseBg =
+    colorScheme === "dark" ? Colors.dark.background : Colors.light.background;
+
   return (
     <ThemeProvider value={colorScheme === "dark" ? SigNozDark : SigNozLight}>
-      <Stack
-        screenOptions={{
-          headerTintColor: colorScheme === "dark" ? Colors.dark.tint : Colors.light.tint,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="add-instance" options={{ title: "Add Instance", presentation: "modal" }} />
-        <Stack.Screen name="edit-instance" options={{ title: "Edit Instance", presentation: "modal" }} />
-        <Stack.Screen name="service/[name]" options={{ title: "Service" }} />
-        <Stack.Screen name="traces/[service]" options={{ title: "Recent Traces" }} />
-        <Stack.Screen name="trace/[id]" options={{ title: "Trace" }} />
-        <Stack.Screen name="logs/[service]" options={{ title: "Recent Errors" }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <View style={{ flex: 1, backgroundColor: baseBg }}>
+        <AtmosphericBg />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="add-instance" options={{ presentation: "modal" }} />
+          <Stack.Screen name="edit-instance" options={{ presentation: "modal" }} />
+          <Stack.Screen name="service/[name]" />
+          <Stack.Screen name="traces/[service]" />
+          <Stack.Screen name="trace/[id]" />
+          <Stack.Screen name="logs/[service]" />
+        </Stack>
+        <StatusBar style="auto" />
+      </View>
     </ThemeProvider>
   );
 }

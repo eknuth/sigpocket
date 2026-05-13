@@ -41,6 +41,11 @@ export type SigNozConfig = {
   // SigNoz Cloud uses ingest.<region>.signoz.cloud; self-hosted deployments
   // commonly run the OTLP collector on :4318 separate from the query UI.
   otlpUrl?: string;
+  // Optional separate key for OTLP ingestion. Many deployments use the same
+  // value for query and ingestion; SigNoz Cloud issues a distinct
+  // "ingestion key" for /v1/traces. When absent the telemetry layer falls
+  // back to `apiKey`.
+  ingestionKey?: string;
 };
 
 export type SigNozInstance = {
@@ -50,6 +55,8 @@ export type SigNozInstance = {
   apiKey: string;
   // Optional explicit OTLP ingestion URL. Falls back to `baseUrl` when absent.
   otlpUrl?: string;
+  // Optional ingestion key — see SigNozConfig.ingestionKey.
+  ingestionKey?: string;
 };
 
 export type ChartPoint = {

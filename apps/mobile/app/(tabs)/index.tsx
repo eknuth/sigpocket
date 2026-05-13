@@ -11,33 +11,26 @@ import {
 } from "react-native";
 import type { ServiceItem } from "@sigpocket/shared-types";
 
+import { Chip } from "@/components/chip";
+import { ScreenHeader } from "@/components/screen-header";
+import { Shimmer, useShimmerOpacity } from "@/components/shimmer";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Brand, FontSize, Radius, Space } from "@/constants/theme";
+import { Brand, FontFamily, FontSize, Radius, Shadow, Space } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useSignozClient } from "@/hooks/use-signoz-client";
 import { useInstanceStore } from "@/stores/instance-store";
 import { usePreferencesStore } from "@/stores/preferences-store";
-
-// ── Status thresholds ─────────────────────────────────────────
-
-type Status = "healthy" | "degraded" | "critical";
-
-const P99_WARN_MS = 500;
-const P99_CRIT_MS = 2000;
-const ERR_RATE_WARN = 0.01; // 1%
-const ERR_RATE_CRIT = 0.05; // 5%
-
-function serviceStatus(item: ServiceItem): Status {
-  const errRate = item.numCalls > 0 ? item.numErrors / item.numCalls : 0;
-  const p99Ms = item.p99 / 1_000_000;
-
-  if (errRate >= ERR_RATE_CRIT || p99Ms >= P99_CRIT_MS) return "critical";
-  if (errRate >= ERR_RATE_WARN || p99Ms >= P99_WARN_MS) return "degraded";
-  return "healthy";
-}
-
-// ── Sort ──────────────────────────────────────────────────────
+import {
+  ERR_RATE_CRIT,
+  ERR_RATE_WARN,
+  P99_CRIT_MS,
+  P99_WARN_MS,
+  STATUS_COLORS,
+  serviceStatus,
+  type ServiceStatus,
+} from "@/lib/service-status";
+import { formatLatency, formatRate, relativeTime } from "@/lib/format";
 
 type SortKey = "status" | "name" | "errors" | "latency";
 
@@ -52,7 +45,7 @@ function sortServices(list: ServiceItem[], key: SortKey): ServiceItem[] {
   const sorted = [...list];
   switch (key) {
     case "status": {
-      const order: Record<Status, number> = { critical: 0, degraded: 1, healthy: 2 };
+      const order: Record<ServiceStatus, number> = { critical: 0, degraded: 1, healthy: 2 };
       return sorted.sort((a, b) => order[serviceStatus(a)] - order[serviceStatus(b)]);
     }
     case "name":
@@ -69,7 +62,6 @@ function sortServices(list: ServiceItem[], key: SortKey): ServiceItem[] {
   }
 }
 
-// ── Screen ────────────────────────────────────────────────────
 
 export default function ServicesScreen() {
   const router = useRouter();
@@ -80,8 +72,6 @@ export default function ServicesScreen() {
   const [sortKey, setSortKey] = useState<SortKey>("status");
 
   const tint = useThemeColor({}, "tint");
-  const surface = useThemeColor({}, "surfaceRaised");
-  const border = useThemeColor({}, "borderSubtle");
   const errorColor = useThemeColor({}, "error");
 
   const {
@@ -89,6 +79,7 @@ export default function ServicesScreen() {
     isLoading,
     isRefetching,
     error,
+    dataUpdatedAt,
     refetch,
   } = useQuery({
     queryKey: ["services", activeId],
@@ -102,10 +93,29 @@ export default function ServicesScreen() {
     [services, sortKey],
   );
 
+  // Header summary line: "X services · 1 critical · refreshed 4s ago"
+  const summary = useMemo(() => {
+    if (!services || services.length === 0) return undefined;
+    const counts = { critical: 0, degraded: 0 };
+    for (const s of services) {
+      const st = serviceStatus(s);
+      if (st === "critical") counts.critical += 1;
+      else if (st === "degraded") counts.degraded += 1;
+    }
+    const total = services.length;
+    const tail = relativeTime(dataUpdatedAt);
+    const parts = [`${total} ${total === 1 ? "service" : "services"}`];
+    if (counts.critical) parts.push(`${counts.critical} critical`);
+    if (counts.degraded) parts.push(`${counts.degraded} degraded`);
+    if (counts.critical === 0 && counts.degraded === 0) parts.push("all healthy");
+    parts.push(`refreshed ${tail}`);
+    return parts.join(" · ");
+  }, [services, dataUpdatedAt]);
+
   if (!client) {
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText type="caption">No instance configured.</ThemedText>
+      <ThemedView style={styles.container}>
+        <ScreenHeader title="Services" subtitle="No instance configured" />
       </ThemedView>
     );
   }
@@ -113,11 +123,12 @@ export default function ServicesScreen() {
   if (isLoading) {
     return (
       <ThemedView style={styles.container}>
+        <ScreenHeader title="Services" eyebrow={activeName} subtitle="Loading…" />
         <View style={styles.list}>
-          <SkeletonCard surface={surface} border={border} />
-          <SkeletonCard surface={surface} border={border} />
-          <SkeletonCard surface={surface} border={border} />
-          <SkeletonCard surface={surface} border={border} />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </View>
       </ThemedView>
     );
@@ -125,16 +136,21 @@ export default function ServicesScreen() {
 
   if (error) {
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText style={{ color: errorColor, textAlign: "center" }}>
-          {error instanceof Error ? error.message : "Failed to load services"}
-        </ThemedText>
-        <Pressable
-          style={[styles.retryButton, { borderColor: tint }]}
-          onPress={() => refetch()}
-        >
-          <ThemedText style={{ color: tint }}>Retry</ThemedText>
-        </Pressable>
+      <ThemedView style={styles.container}>
+        <ScreenHeader title="Services" eyebrow={activeName} />
+        <View style={styles.centered}>
+          <ThemedText style={{ color: errorColor, textAlign: "center" }}>
+            {error instanceof Error ? error.message : "Failed to load services"}
+          </ThemedText>
+          <Pressable
+            style={[styles.retryButton, { borderColor: tint }]}
+            onPress={() => refetch()}
+          >
+            <ThemedText style={{ color: tint, fontFamily: FontFamily.sansSemibold }}>
+              Retry
+            </ThemedText>
+          </Pressable>
+        </View>
       </ThemedView>
     );
   }
@@ -149,13 +165,17 @@ export default function ServicesScreen() {
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={tint} />
         }
         ListHeaderComponent={
-          <View style={styles.header}>
-            {activeName ? (
-              <ThemedText type="caption" style={styles.instanceLabel}>
-                {activeName.toUpperCase()}
-              </ThemedText>
-            ) : null}
-            <SortBar current={sortKey} onSelect={setSortKey} tint={tint} border={border} />
+          <View>
+            <ScreenHeader
+              title="Services"
+              eyebrow={activeName}
+              subtitle={summary}
+              paddedTop={true}
+              paddedSides={false}
+            />
+            <View style={styles.sortBarWrap}>
+              <SortBar current={sortKey} onSelect={setSortKey} />
+            </View>
           </View>
         }
         ListEmptyComponent={
@@ -169,90 +189,100 @@ export default function ServicesScreen() {
             </ThemedText>
           </View>
         }
-        renderItem={({ item }) => (
-          <ServiceCard
-            item={item}
-            surface={surface}
-            border={border}
-            onPress={() =>
-              router.push({ pathname: "/service/[name]", params: { name: item.serviceName } })
-            }
-          />
+        renderItem={({ item, index }) => (
+          <StaggeredEntry index={index}>
+            <ServiceCard
+              item={item}
+              onPress={() =>
+                router.push({ pathname: "/service/[name]", params: { name: item.serviceName } })
+              }
+            />
+          </StaggeredEntry>
         )}
       />
     </ThemedView>
   );
 }
 
-// ── Sort bar ──────────────────────────────────────────────────
 
 function SortBar({
   current,
   onSelect,
-  tint,
-  border,
 }: {
   current: SortKey;
   onSelect: (key: SortKey) => void;
-  tint: string;
-  border: string;
 }) {
   return (
     <View style={styles.sortBar}>
-      {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => {
-        const active = key === current;
-        return (
-          <Pressable
-            key={key}
-            onPress={() => onSelect(key)}
-            style={[
-              styles.sortChip,
-              {
-                backgroundColor: active ? tint + "22" : "transparent",
-                borderColor: active ? tint : border,
-              },
-            ]}
-            testID={`sort-${key}`}
-          >
-            <ThemedText
-              style={{
-                fontSize: FontSize.xs,
-                fontWeight: active ? "600" : "400",
-                color: active ? tint : undefined,
-              }}
-            >
-              {SORT_LABELS[key]}
-            </ThemedText>
-          </Pressable>
-        );
-      })}
+      {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+        <Chip
+          key={key}
+          value={key}
+          label={SORT_LABELS[key]}
+          active={key === current}
+          onPress={onSelect}
+          size="sm"
+          testID={`sort-${key}`}
+        />
+      ))}
     </View>
   );
 }
 
-// ── Service card ──────────────────────────────────────────────
 
-const STATUS_COLORS: Record<Status, string> = {
-  healthy: Brand.green400,
-  degraded: Brand.amber500,
-  critical: Brand.red400,
-};
+function StaggeredEntry({
+  index,
+  children,
+}: {
+  index: number;
+  children: React.ReactNode;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current;
+  // FlatList recycles cells; without this guard a scrolled-into-view row
+  // re-runs the entry animation every time it gets a new item.
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (hasAnimated.current) return;
+    hasAnimated.current = true;
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 280,
+        delay: Math.min(index, 8) * 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 280,
+        delay: Math.min(index, 8) * 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [index, opacity, translateY]);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
+  );
+}
 
 function ServiceCard({
   item,
-  surface,
-  border,
   onPress,
 }: {
   item: ServiceItem;
-  surface: string;
-  border: string;
   onPress: () => void;
 }) {
+  const surface = useThemeColor({}, "surface");
+  const border = useThemeColor({}, "borderSubtle");
   const status = serviceStatus(item);
-  const dotColor = STATUS_COLORS[status];
+  const statusColor = STATUS_COLORS[status];
   const p99Ms = item.p99 / 1_000_000;
   const errRate = item.numCalls > 0 ? (item.numErrors / item.numCalls) * 100 : 0;
+  const isCritical = status === "critical";
 
   return (
     <Pressable
@@ -260,41 +290,62 @@ function ServiceCard({
         styles.card,
         {
           backgroundColor: surface,
-          borderColor: status === "critical" ? Brand.red400 + "44" : border,
-          opacity: pressed ? 0.85 : 1,
+          borderColor: isCritical ? statusColor + "55" : border,
+          opacity: pressed ? 0.88 : 1,
         },
+        isCritical && Shadow.criticalGlow,
       ]}
       onPress={onPress}
       testID={`service-card-${item.serviceName}`}
     >
-      <View style={styles.cardTop}>
-        <View style={[styles.dot, { backgroundColor: dotColor }]} />
-        <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ flex: 1 }}>
-          {item.serviceName}
-        </ThemedText>
-      </View>
+      <View style={[styles.statusBar, { backgroundColor: statusColor }]} />
 
-      <View style={styles.metricsRow}>
-        <MetricCell
-          label="P99"
-          value={formatLatency(p99Ms)}
-          warn={p99Ms >= P99_WARN_MS}
-          crit={p99Ms >= P99_CRIT_MS}
-        />
-        <MetricCell
-          label="Err%"
-          value={`${errRate.toFixed(2)}%`}
-          warn={errRate >= ERR_RATE_WARN * 100}
-          crit={errRate >= ERR_RATE_CRIT * 100}
-        />
-        <MetricCell label="RPM" value={formatRate(item.callRate)} />
-        <MetricCell label="Avg" value={formatLatency(item.avgDuration / 1_000_000)} />
+      <View style={styles.cardBody}>
+        <View style={styles.cardTop}>
+          <ThemedText
+            numberOfLines={1}
+            style={{
+              fontFamily: FontFamily.sansSemibold,
+              fontSize: FontSize.base,
+              flex: 1,
+              letterSpacing: -0.2,
+            }}
+          >
+            {item.serviceName}
+          </ThemedText>
+          <ThemedText
+            style={{
+              fontFamily: FontFamily.monoSemibold,
+              fontSize: 10,
+              color: statusColor,
+              letterSpacing: 1.4,
+            }}
+          >
+            {status.toUpperCase()}
+          </ThemedText>
+        </View>
+
+        <View style={styles.metricsRow}>
+          <MetricCell
+            label="P99"
+            value={formatLatency(p99Ms)}
+            warn={p99Ms >= P99_WARN_MS}
+            crit={p99Ms >= P99_CRIT_MS}
+          />
+          <MetricCell
+            label="ERR"
+            value={`${errRate.toFixed(2)}%`}
+            warn={errRate >= ERR_RATE_WARN * 100}
+            crit={errRate >= ERR_RATE_CRIT * 100}
+          />
+          <MetricCell label="RPM" value={formatRate(item.callRate)} />
+          <MetricCell label="AVG" value={formatLatency(item.avgDuration / 1_000_000)} />
+        </View>
       </View>
     </Pressable>
   );
 }
 
-// ── Metric cell ───────────────────────────────────────────────
 
 function MetricCell({
   label,
@@ -307,75 +358,67 @@ function MetricCell({
   warn?: boolean;
   crit?: boolean;
 }) {
-  const tint = useThemeColor({}, "tint");
-  const color = crit ? Brand.red400 : warn ? Brand.amber500 : tint;
+  const text = useThemeColor({}, "text");
+  const muted = useThemeColor({}, "textMuted");
+  const color = crit ? Brand.red400 : warn ? Brand.amber400 : text;
 
   return (
     <View style={styles.metricCell}>
-      <ThemedText type="caption">{label}</ThemedText>
-      <ThemedText type="mono" style={{ color, fontSize: FontSize.sm, fontWeight: "600" }}>
+      <ThemedText
+        style={{
+          fontFamily: FontFamily.monoMedium,
+          fontSize: 10,
+          color: muted,
+          letterSpacing: 1.2,
+        }}
+      >
+        {label}
+      </ThemedText>
+      <ThemedText
+        style={{
+          fontFamily: FontFamily.monoSemibold,
+          color,
+          fontSize: FontSize.sm,
+          fontVariant: ["tabular-nums"],
+        }}
+      >
         {value}
       </ThemedText>
     </View>
   );
 }
 
-// ── Skeleton card ─────────────────────────────────────────────
 
-function SkeletonCard({ surface, border }: { surface: string; border: string }) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ]),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [opacity]);
+function SkeletonCard() {
+  const surface = useThemeColor({}, "surface");
+  const border = useThemeColor({}, "borderSubtle");
+  const opacity = useShimmerOpacity();
 
   return (
     <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
-      <View style={styles.cardTop}>
-        <Animated.View
-          style={[styles.skeletonBar, { width: 10, height: 10, borderRadius: 5, opacity }]}
-        />
-        <Animated.View style={[styles.skeletonBar, { width: "60%", opacity }]} />
-      </View>
-      <View style={styles.metricsRow}>
-        {[1, 2, 3, 4].map((i) => (
-          <View key={i} style={styles.metricCell}>
-            <Animated.View style={[styles.skeletonBar, { width: 28, height: 10, opacity }]} />
-            <Animated.View style={[styles.skeletonBar, { width: 48, opacity }]} />
-          </View>
-        ))}
+      <View style={[styles.statusBar, { backgroundColor: Brand.robin500 + "44" }]} />
+      <View style={styles.cardBody}>
+        <View style={styles.cardTop}>
+          <Shimmer width="60%" opacity={opacity} />
+          <Shimmer width={48} height={10} opacity={opacity} />
+        </View>
+        <View style={styles.metricsRow}>
+          {[1, 2, 3, 4].map((i) => (
+            <View key={i} style={styles.metricCell}>
+              <Shimmer width={24} height={8} opacity={opacity} />
+              <Shimmer width={44} opacity={opacity} />
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   );
 }
 
-// ── Formatters ────────────────────────────────────────────────
-
-function formatLatency(ms: number): string {
-  if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
-  if (ms < 1000) return `${ms.toFixed(0)}ms`;
-  return `${(ms / 1000).toFixed(2)}s`;
-}
-
-function formatRate(perSec: number): string {
-  const rpm = perSec * 60;
-  if (rpm < 1) return `${(perSec * 60).toFixed(2)}/m`;
-  if (rpm < 1000) return `${rpm.toFixed(0)}/m`;
-  return `${(rpm / 1000).toFixed(1)}k/m`;
-}
-
-// ── Styles ────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "transparent",
   },
   centered: {
     flex: 1,
@@ -385,30 +428,32 @@ const styles = StyleSheet.create({
     gap: Space.lg,
   },
   list: {
-    padding: Space.lg,
+    paddingHorizontal: Space.lg,
+    paddingBottom: 160, // reserve space for floating tab bar
     gap: Space.md,
   },
-  header: {
-    gap: Space.sm,
-    marginBottom: Space.xs,
-  },
-  instanceLabel: {
-    letterSpacing: 1,
+  sortBarWrap: {
+    marginBottom: Space.md,
   },
   sortBar: {
     flexDirection: "row",
-    gap: Space.sm,
-  },
-  sortChip: {
-    paddingHorizontal: Space.md,
-    paddingVertical: Space.xs,
-    borderRadius: Radius.full,
-    borderWidth: 1,
+    gap: Space.xs,
+    paddingHorizontal: Space.xs,
   },
   card: {
+    flexDirection: "row",
     borderWidth: 1,
     borderRadius: Radius.lg,
-    padding: Space.lg,
+    overflow: "hidden",
+    minHeight: 84,
+  },
+  statusBar: {
+    width: 3,
+  },
+  cardBody: {
+    flex: 1,
+    paddingVertical: Space.md,
+    paddingHorizontal: Space.lg,
     gap: Space.md,
   },
   cardTop: {
@@ -416,20 +461,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Space.sm,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
   metricsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
   metricCell: {
-    gap: 2,
+    gap: 4,
   },
   emptyState: {
     paddingVertical: Space.xxxl,
+    paddingHorizontal: Space.lg,
     gap: Space.md,
     alignItems: "center",
   },
@@ -438,10 +479,5 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingHorizontal: Space.lg,
     paddingVertical: Space.sm,
-  },
-  skeletonBar: {
-    height: 14,
-    borderRadius: Radius.sm,
-    backgroundColor: "#4668DC33",
   },
 });

@@ -9,14 +9,15 @@ import {
   View,
 } from "react-native";
 
+import { Chip } from "@/components/chip";
+import { ScreenHeader } from "@/components/screen-header";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Brand, FontSize, Radius, Space } from "@/constants/theme";
+import { Brand, FontFamily, FontSize, Radius, Space } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useInstanceStore } from "@/stores/instance-store";
 import { usePreferencesStore } from "@/stores/preferences-store";
 
-// ── Preference options ────────────────────────────────────────
 
 type ThemePref = "system" | "light" | "dark";
 type RefreshIntervalMs = 5000 | 15000 | 30000 | 60000;
@@ -37,7 +38,6 @@ const REFRESH_OPTIONS: { value: RefreshIntervalMs; label: string }[] = [
 const GITHUB_URL = "https://github.com/eknuth/sigpocket";
 const LICENSE_URL = "https://github.com/eknuth/sigpocket/blob/main/LICENSE";
 
-// ── Screen ────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -70,6 +70,10 @@ export default function SettingsScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
+        <ScreenHeader
+          title="Settings"
+          subtitle={`${instances.length} ${instances.length === 1 ? "instance" : "instances"}`}
+        />
         {/* ── INSTANCES ──────────────────────────────────────── */}
         <SectionHeader label="INSTANCES" color={secondaryText} />
         <View style={styles.sectionBody}>
@@ -90,11 +94,30 @@ export default function SettingsScreen() {
                 testID={`instance-card-${item.id}`}
               >
                 <View style={styles.cardHeader}>
-                  <ThemedText type="defaultSemiBold">{item.name}</ThemedText>
+                  <ThemedText
+                    type="defaultSemiBold"
+                    numberOfLines={1}
+                    style={{ flex: 1, flexShrink: 1 }}
+                  >
+                    {item.name}
+                  </ThemedText>
                   {isActive && (
-                    <View style={[styles.badge, { backgroundColor: tint + "22" }]}>
+                    <View
+                      style={[
+                        styles.badge,
+                        {
+                          backgroundColor: tint + "22",
+                          borderColor: tint + "55",
+                        },
+                      ]}
+                    >
                       <ThemedText
-                        style={{ color: tint, fontSize: FontSize.xs, fontWeight: "600" }}
+                        style={{
+                          color: tint,
+                          fontFamily: FontFamily.monoSemibold,
+                          fontSize: 10,
+                          letterSpacing: 1.2,
+                        }}
                       >
                         ACTIVE
                       </ThemedText>
@@ -151,33 +174,16 @@ export default function SettingsScreen() {
           >
             <ThemedText type="defaultSemiBold">Theme</ThemedText>
             <View style={styles.chipRow}>
-              {THEME_OPTIONS.map((opt) => {
-                const active = opt.value === theme;
-                return (
-                  <Pressable
-                    key={opt.value}
-                    onPress={() => setTheme(opt.value)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: active ? tint + "22" : "transparent",
-                        borderColor: active ? tint : borderSubtle,
-                      },
-                    ]}
-                    testID={`theme-${opt.value}`}
-                  >
-                    <ThemedText
-                      style={{
-                        fontSize: FontSize.xs,
-                        fontWeight: active ? "600" : "400",
-                        color: active ? tint : undefined,
-                      }}
-                    >
-                      {opt.label}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
+              {THEME_OPTIONS.map((opt) => (
+                <Chip
+                  key={opt.value}
+                  value={opt.value}
+                  label={opt.label}
+                  active={opt.value === theme}
+                  onPress={setTheme}
+                  testID={`theme-${opt.value}`}
+                />
+              ))}
             </View>
           </View>
 
@@ -189,35 +195,24 @@ export default function SettingsScreen() {
           >
             <ThemedText type="defaultSemiBold">Services refresh interval</ThemedText>
             <View style={styles.chipRow}>
-              {REFRESH_OPTIONS.map((opt) => {
-                const active = opt.value === refreshIntervalMs;
-                return (
-                  <Pressable
-                    key={opt.value}
-                    onPress={() => setRefreshIntervalMs(opt.value)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: active ? tint + "22" : "transparent",
-                        borderColor: active ? tint : borderSubtle,
-                      },
-                    ]}
-                    testID={`refresh-${opt.value}`}
-                  >
-                    <ThemedText
-                      style={{
-                        fontSize: FontSize.xs,
-                        fontWeight: active ? "600" : "400",
-                        color: active ? tint : undefined,
-                      }}
-                    >
-                      {opt.label}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
+              {REFRESH_OPTIONS.map((opt) => (
+                <Chip
+                  key={opt.value}
+                  value={opt.value}
+                  label={opt.label}
+                  active={opt.value === refreshIntervalMs}
+                  onPress={setRefreshIntervalMs}
+                  testID={`refresh-${opt.value}`}
+                />
+              ))}
             </View>
           </View>
+        </View>
+
+        {/* ── TELEMETRY ──────────────────────────────────────── */}
+        <SectionHeader label="TELEMETRY" color={secondaryText} />
+        <View style={styles.sectionBody}>
+          <TelemetryRow />
         </View>
 
         {/* ── ABOUT ──────────────────────────────────────────── */}
@@ -266,7 +261,104 @@ export default function SettingsScreen() {
   );
 }
 
-// ── Section header ────────────────────────────────────────────
+// ── Telemetry row ─────────────────────────────────────────────
+// Surfaces whether the active instance has an OTLP endpoint configured so
+// the user can confirm "sigpocket-mobile" should appear in their SigNoz.
+
+function TelemetryRow() {
+  const surface = useThemeColor({}, "surface");
+  const border = useThemeColor({}, "borderSubtle");
+  const secondaryText = useThemeColor({}, "textSecondary");
+  const tint = useThemeColor({}, "tint");
+  const active = useInstanceStore((s) => s.getActive());
+  const otlpUrl = active?.otlpUrl;
+  const baseUrl = active?.baseUrl;
+  const ingestionKeySet = !!active?.ingestionKey;
+  const enabled = !!otlpUrl;
+
+  return (
+    <View
+      style={[
+        styles.aboutGroup,
+        { backgroundColor: surface, borderColor: border },
+      ]}
+    >
+      <View style={styles.aboutRow}>
+        <ThemedText>Status</ThemedText>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: Space.xs,
+          }}
+        >
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: enabled ? Brand.green400 : Brand.amber500,
+            }}
+          />
+          <ThemedText
+            style={{
+              fontFamily: FontFamily.monoSemibold,
+              fontSize: FontSize.sm,
+              color: enabled ? Brand.green400 : Brand.amber500,
+              letterSpacing: 0.4,
+            }}
+          >
+            {enabled ? "ACTIVE" : "NOT CONFIGURED"}
+          </ThemedText>
+        </View>
+      </View>
+      <View style={[styles.aboutDivider, { backgroundColor: border }]} />
+      <View style={[styles.aboutRow, { gap: Space.md, alignItems: "flex-start" }]}>
+        <ThemedText>OTLP endpoint</ThemedText>
+        <ThemedText
+          type="mono"
+          numberOfLines={2}
+          style={{ color: secondaryText, flex: 1, textAlign: "right" }}
+        >
+          {otlpUrl ?? "—"}
+        </ThemedText>
+      </View>
+      <View style={[styles.aboutDivider, { backgroundColor: border }]} />
+      <View style={styles.aboutRow}>
+        <ThemedText>Ingestion key</ThemedText>
+        <ThemedText type="mono" style={{ color: secondaryText }}>
+          {ingestionKeySet ? "set" : "reusing API key"}
+        </ThemedText>
+      </View>
+      <View style={[styles.aboutDivider, { backgroundColor: border }]} />
+      <View style={styles.aboutRow}>
+        <ThemedText>Service name</ThemedText>
+        <ThemedText type="mono" style={{ color: secondaryText }}>
+          sigpocket-mobile
+        </ThemedText>
+      </View>
+      {!enabled && baseUrl ? (
+        <>
+          <View style={[styles.aboutDivider, { backgroundColor: border }]} />
+          <View style={{ paddingHorizontal: Space.lg, paddingVertical: Space.md }}>
+            <ThemedText
+              type="caption"
+              style={{ color: secondaryText, lineHeight: 18 }}
+            >
+              Add an OTLP endpoint on this instance to send the app&apos;s own
+              telemetry. Uses the same API key. SigNoz Cloud:{" "}
+              <ThemedText type="mono" style={{ color: tint }}>
+                https://ingest.&lt;region&gt;.signoz.cloud:443
+              </ThemedText>
+              . Self-hosted: usually port 4318.
+            </ThemedText>
+          </View>
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 
 function SectionHeader({ label, color }: { label: string; color: string }) {
   return (
@@ -274,26 +366,26 @@ function SectionHeader({ label, color }: { label: string; color: string }) {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   scroll: {
-    padding: Space.lg,
+    paddingBottom: 160,
     gap: Space.md,
   },
   sectionLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: "600",
-    letterSpacing: 1.2,
+    fontFamily: FontFamily.monoMedium,
+    fontSize: 11,
+    letterSpacing: 1.6,
     marginTop: Space.md,
     marginBottom: Space.xs,
-    paddingHorizontal: Space.xs,
+    paddingHorizontal: Space.lg,
   },
   sectionBody: {
     gap: Space.md,
+    paddingHorizontal: Space.lg,
   },
   card: {
     borderWidth: 1,
@@ -305,11 +397,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: Space.sm,
   },
   badge: {
     paddingHorizontal: Space.sm,
-    paddingVertical: 2,
-    borderRadius: Radius.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    flexShrink: 0,
   },
   cardActions: {
     flexDirection: "row",
@@ -337,10 +432,12 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   chip: {
-    paddingHorizontal: Space.md,
-    paddingVertical: Space.xs,
+    paddingHorizontal: Space.lg,
+    paddingVertical: 10,
     borderRadius: Radius.full,
     borderWidth: 1,
+    minHeight: 36,
+    justifyContent: "center",
   },
   aboutGroup: {
     borderWidth: 1,

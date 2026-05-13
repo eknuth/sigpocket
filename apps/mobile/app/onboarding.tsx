@@ -17,6 +17,7 @@ export default function OnboardingScreen() {
     baseUrl: string;
     apiKey: string;
     otlpUrl?: string;
+    ingestionKey?: string;
   }) {
     await addInstance({
       id: randomId(),

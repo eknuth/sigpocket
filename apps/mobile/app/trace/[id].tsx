@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  Animated,
   Modal,
   Pressable,
   RefreshControl,
@@ -12,15 +11,16 @@ import {
 } from "react-native";
 import type { TraceSpan } from "@sigpocket/shared-types";
 
+import { ScreenHeader } from "@/components/screen-header";
+import { Shimmer, useShimmerOpacity } from "@/components/shimmer";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TraceWaterfall } from "@/components/trace-waterfall";
-import { Brand, FontSize, Radius, Space } from "@/constants/theme";
+import { Brand, FontFamily, FontSize, Radius, Space } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useSignozClient } from "@/hooks/use-signoz-client";
 import { useInstanceStore } from "@/stores/instance-store";
 
-// ── Screen ────────────────────────────────────────────────────
 
 export default function TraceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,7 +33,6 @@ export default function TraceDetailScreen() {
   const surface = useThemeColor({}, "surfaceRaised");
   const border = useThemeColor({}, "borderSubtle");
   const errorColor = useThemeColor({}, "error");
-  const secondaryText = useThemeColor({}, "textSecondary");
 
   const {
     data: detail,
@@ -74,33 +73,34 @@ export default function TraceDetailScreen() {
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={tint} />
         }
       >
-        {/* ── Header ──────────────────────────── */}
-        <View style={[styles.headerCard, { backgroundColor: surface, borderColor: border }]}>
-          <ThemedText type="caption" style={{ letterSpacing: 1 }}>
-            TRACE
-          </ThemedText>
-          <ThemedText type="mono" style={{ fontSize: FontSize.sm }} selectable>
-            {truncateTraceId(id)}
-          </ThemedText>
-          {root ? (
-            <>
-              <ThemedText type="defaultSemiBold" numberOfLines={2} style={{ marginTop: Space.sm }}>
-                {root.name || "(unnamed)"}
-              </ThemedText>
-              <View style={styles.headerMeta}>
-                <ThemedText type="caption" style={{ color: secondaryText }}>
-                  {root["service.name"]}
-                </ThemedText>
+        <ScreenHeader
+          back
+          paddedSides={false}
+          eyebrow={`Trace · ${truncateTraceId(id)}`}
+          title={root?.name || "Trace"}
+          subtitle={root ? root["service.name"] : undefined}
+          right={
+            root ? (
+              <View
+                style={[
+                  styles.durationPill,
+                  { backgroundColor: tint + "1A", borderColor: tint + "55" },
+                ]}
+              >
                 <ThemedText
-                  type="mono"
-                  style={{ color: tint, fontSize: FontSize.sm, fontWeight: "600" }}
+                  style={{
+                    color: tint,
+                    fontFamily: FontFamily.monoSemibold,
+                    fontSize: FontSize.sm,
+                    fontVariant: ["tabular-nums"],
+                  }}
                 >
                   {totalDurationMs.toFixed(0)} ms
                 </ThemedText>
               </View>
-            </>
-          ) : null}
-        </View>
+            ) : undefined
+          }
+        />
 
         {/* ── Waterfall ───────────────────────── */}
         {isLoading ? (
@@ -182,7 +182,6 @@ export default function TraceDetailScreen() {
   );
 }
 
-// ── Span detail row ───────────────────────────────────────────
 
 function SpanDetailRow({
   label,
@@ -212,45 +211,24 @@ function SpanDetailRow({
   );
 }
 
-// ── Skeleton ──────────────────────────────────────────────────
 
 function WaterfallSkeleton() {
-  const opacity = useRef(new Animated.Value(0.3)).current;
-  const surface = useThemeColor({}, "surfaceRaised");
+  const opacity = useShimmerOpacity();
   const border = useThemeColor({}, "borderSubtle");
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ]),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [opacity]);
-
   return (
     <View style={[styles.skeletonContainer, { borderColor: border }]}>
       {[0.95, 0.7, 0.55, 0.4, 0.45, 0.3].map((w, i) => (
-        <Animated.View
+        <Shimmer
           key={i}
-          style={[
-            styles.skeletonBar,
-            {
-              width: `${w * 100}%`,
-              marginLeft: `${(1 - w) * 30}%`,
-              backgroundColor: surface,
-              opacity,
-            },
-          ]}
+          width={`${Math.round(w * 100)}%`}
+          opacity={opacity}
+          style={{ marginLeft: `${(1 - w) * 30}%` }}
         />
       ))}
     </View>
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────
 
 function truncateTraceId(id: string): string {
   if (!id) return "";
@@ -258,7 +236,6 @@ function truncateTraceId(id: string): string {
   return `${id.slice(0, 8)}…${id.slice(-8)}`;
 }
 
-// ── Styles ────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -272,8 +249,15 @@ const styles = StyleSheet.create({
     gap: Space.lg,
   },
   scroll: {
-    padding: Space.lg,
+    paddingHorizontal: Space.lg,
+    paddingBottom: 160,
     gap: Space.lg,
+  },
+  durationPill: {
+    paddingHorizontal: Space.md,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
   },
   headerCard: {
     borderWidth: 1,
@@ -305,10 +289,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: Space.lg,
     gap: Space.sm,
-  },
-  skeletonBar: {
-    height: 18,
-    borderRadius: Radius.sm,
   },
   modalBackdrop: {
     flex: 1,
