@@ -1,0 +1,89 @@
+---
+// Compact live-style RED-method strip. Animates once on mount, then settles.
+---
+
+<div
+  class="inline-grid grid-cols-3 gap-px rounded-lg overflow-hidden border border-border bg-border text-left"
+  role="group"
+  aria-label="Live example metrics: Rate, Errors, Duration"
+>
+  <div class="px-4 py-3 bg-surface-2 min-w-[88px]">
+    <div class="flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase text-text-muted">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-success pulse-dot"></span>
+      rate
+    </div>
+    <div class="mt-1.5 font-mono text-base sm:text-lg font-medium tabular text-text">
+      <span data-ticker="rate">1,284</span>
+      <span class="text-text-muted text-[11px] tracking-tight">/min</span>
+    </div>
+  </div>
+
+  <div class="px-4 py-3 bg-surface-2 min-w-[88px]">
+    <div class="flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase text-text-muted">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-warning pulse-dot"></span>
+      errors
+    </div>
+    <div class="mt-1.5 font-mono text-base sm:text-lg font-medium tabular text-text">
+      <span data-ticker="err">0.42</span>
+      <span class="text-text-muted text-[11px] tracking-tight">%</span>
+    </div>
+  </div>
+
+  <div class="px-4 py-3 bg-surface-2 min-w-[88px]">
+    <div class="flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase text-text-muted">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-brand pulse-dot"></span>
+      p95
+    </div>
+    <div class="mt-1.5 font-mono text-base sm:text-lg font-medium tabular text-text">
+      <span data-ticker="p95">184</span>
+      <span class="text-text-muted text-[11px] tracking-tight">ms</span>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    const finals = {
+      rate: { value: 1284, fmt: (n) => Math.round(n).toLocaleString() },
+      err: { value: 0.42, fmt: (n) => n.toFixed(2) },
+      p95: { value: 184, fmt: (n) => Math.round(n).toString() },
+    };
+
+    function animate(el, target, fmt, duration) {
+      const start = performance.now();
+      function frame(now) {
+        const t = Math.min(1, (now - start) / duration);
+        // easeOutCubic
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = fmt(target * eased);
+        if (t < 1) requestAnimationFrame(frame);
+        else el.textContent = fmt(target);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    document.querySelectorAll("[data-ticker]").forEach((el) => {
+      const key = el.getAttribute("data-ticker");
+      const cfg = finals[key];
+      if (!cfg) return;
+      animate(el, cfg.value, cfg.fmt, 1100 + Math.random() * 300);
+    });
+
+    // Periodic gentle wobble so it feels live (not constant — every 4-7s)
+    setInterval(() => {
+      const rateEl = document.querySelector('[data-ticker="rate"]');
+      const errEl = document.querySelector('[data-ticker="err"]');
+      const p95El = document.querySelector('[data-ticker="p95"]');
+      if (!rateEl || !errEl || !p95El) return;
+      const r = 1284 + Math.round((Math.random() - 0.5) * 80);
+      const e = +(0.42 + (Math.random() - 0.5) * 0.18).toFixed(2);
+      const p = 184 + Math.round((Math.random() - 0.5) * 22);
+      rateEl.textContent = r.toLocaleString();
+      errEl.textContent = e.toFixed(2);
+      p95El.textContent = p.toString();
+    }, 4800);
+  })();
+</script>

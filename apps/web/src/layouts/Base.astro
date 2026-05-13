@@ -1,0 +1,200 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  path?: string;
+}
+
+const {
+  title = "SigPocket — your SigNoz, in your pocket",
+  description = "RED metrics, traces, and logs from any SigNoz instance, on the phone in your hand. Open source. BYO SigNoz. No tracking.",
+  path = "/",
+} = Astro.props;
+
+const canonical = new URL(path, "https://sigpocket.com").toString();
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#07080B" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F7F8FB" media="(prefers-color-scheme: light)" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content="https://sigpocket.com/og.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="SigPocket" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="https://sigpocket.com/og.svg" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href="/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossorigin />
+
+    <script is:inline>
+      // Theme: dark by default; honor stored choice.
+      try {
+        const stored = localStorage.getItem("sigpocket-theme");
+        if (stored === "light") {
+          document.documentElement.dataset.theme = "light";
+        }
+      } catch (_) {}
+    </script>
+  </head>
+  <body class="font-sans antialiased">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-brand focus:text-white focus:px-3 focus:py-2 focus:rounded-md focus:text-sm focus:font-medium"
+    >
+      Skip to content
+    </a>
+
+    <header
+      class="sticky top-0 z-40 backdrop-blur-md bg-[color-mix(in_srgb,var(--bg)_82%,transparent)] border-b border-border-subtle"
+    >
+      <div class="mx-auto max-w-6xl px-5 sm:px-8 h-14 flex items-center justify-between gap-6">
+        <a href="/" class="flex items-center gap-2.5 group">
+          <span
+            class="relative inline-flex w-6 h-6 items-center justify-center rounded-md bg-brand text-white font-mono text-[11px] font-semibold tracking-tight"
+            aria-hidden="true"
+          >
+            §
+            <span
+              class="absolute inset-0 rounded-md bg-brand opacity-40 blur-md group-hover:opacity-60 transition-opacity"
+            ></span>
+          </span>
+          <span class="font-mono text-[15px] font-semibold tracking-tight">
+            sigpocket<span class="text-text-muted">.com</span>
+          </span>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-7 text-[13px] text-text-secondary">
+          <a href="#features" class="hover:text-text transition-colors">features</a>
+          <a href="#privacy" class="hover:text-text transition-colors">privacy</a>
+          <a href="#stack" class="hover:text-text transition-colors">stack</a>
+          <a
+            href="https://github.com/eknuth/sigpocket"
+            class="hover:text-text transition-colors"
+            target="_blank"
+            rel="noopener"
+          >
+            github
+          </a>
+        </nav>
+
+        <div class="flex items-center gap-2">
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Toggle color theme"
+            class="w-8 h-8 inline-flex items-center justify-center rounded-md text-text-secondary hover:text-text hover:bg-surface-2 transition-colors"
+          >
+            <svg id="icon-sun" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+            </svg>
+            <svg id="icon-moon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <a
+            href="https://github.com/eknuth/sigpocket"
+            target="_blank"
+            rel="noopener"
+            class="hidden sm:inline-flex items-center gap-2 h-8 px-3 rounded-md text-[12px] font-mono font-medium text-text-secondary hover:text-text bg-surface-2 hover:bg-surface-3 border border-border-subtle transition-colors"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.69 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.27-5.24-5.68 0-1.26.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.5 3.16-1.18 3.16-1.18.63 1.58.24 2.75.11 3.04.74.8 1.18 1.82 1.18 3.08 0 4.42-2.69 5.39-5.25 5.67.41.35.78 1.05.78 2.12v3.14c0 .31.2.67.79.55A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/>
+            </svg>
+            github
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <footer class="border-t border-border-subtle mt-24">
+      <div class="mx-auto max-w-6xl px-5 sm:px-8 py-12 grid gap-10 sm:grid-cols-3 text-sm">
+        <div class="space-y-3">
+          <div class="flex items-center gap-2 font-mono text-[13px]">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-success pulse-dot"></span>
+            <span>sigpocket.com</span>
+          </div>
+          <p class="text-text-muted text-[13px] leading-relaxed">
+            Apache&nbsp;2.0. Open source.
+            Not affiliated with SigNoz Inc.
+          </p>
+        </div>
+
+        <div class="space-y-2 text-[13px]">
+          <div class="font-mono text-text-muted text-[11px] tracking-widest uppercase">project</div>
+          <ul class="space-y-1.5">
+            <li><a href="https://github.com/eknuth/sigpocket" class="text-text-secondary hover:text-text transition-colors" target="_blank" rel="noopener">github</a></li>
+            <li><a href="/privacy" class="text-text-secondary hover:text-text transition-colors">privacy</a></li>
+            <li><a href="https://signoz.io" class="text-text-secondary hover:text-text transition-colors" target="_blank" rel="noopener">signoz.io</a></li>
+          </ul>
+        </div>
+
+        <div class="space-y-2 text-[13px]">
+          <div class="font-mono text-text-muted text-[11px] tracking-widest uppercase">build</div>
+          <ul class="space-y-1.5 font-mono text-text-muted">
+            <li><span class="text-text-secondary">v</span> 0.0.1</li>
+            <li><span class="text-text-secondary">expo</span> sdk 54</li>
+            <li><span class="text-text-secondary">license</span> apache-2.0</li>
+          </ul>
+        </div>
+      </div>
+    </footer>
+
+    <script is:inline>
+      // Theme toggle
+      const btn = document.getElementById("theme-toggle");
+      const sun = document.getElementById("icon-sun");
+      const moon = document.getElementById("icon-moon");
+      function syncIcon() {
+        const isLight = document.documentElement.dataset.theme === "light";
+        if (sun && moon) {
+          sun.classList.toggle("hidden", !isLight);
+          moon.classList.toggle("hidden", isLight);
+        }
+      }
+      syncIcon();
+      btn?.addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem("sigpocket-theme", next); } catch (_) {}
+        syncIcon();
+      });
+
+      // Reveal-on-scroll
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add("visible");
+            io.unobserve(e.target);
+          }
+        }
+      }, { rootMargin: "0px 0px -10% 0px", threshold: 0.05 });
+      document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>

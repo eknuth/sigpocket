@@ -1,0 +1,47 @@
+---
+interface Props {
+  values?: number[];
+  stroke?: string;
+  height?: number;
+}
+const {
+  values = [42, 38, 51, 47, 62, 58, 74, 66, 80, 71, 92, 84, 77, 88, 95, 81],
+  stroke = "var(--brand)",
+  height = 64,
+} = Astro.props;
+
+const max = Math.max(...values);
+const min = Math.min(...values);
+const range = Math.max(1, max - min);
+const w = 240;
+const h = height;
+const step = w / (values.length - 1);
+const points = values.map((v, i) => {
+  const x = i * step;
+  const y = h - ((v - min) / range) * (h - 6) - 3;
+  return [x, y];
+});
+const linePath = points
+  .map(([x, y], i) => (i === 0 ? `M${x.toFixed(1)} ${y.toFixed(1)}` : `L${x.toFixed(1)} ${y.toFixed(1)}`))
+  .join(" ");
+const areaPath = `${linePath} L${w} ${h} L0 ${h} Z`;
+const [lastX, lastY] = points[points.length - 1];
+---
+
+<svg
+  viewBox={`0 0 ${w} ${h}`}
+  preserveAspectRatio="none"
+  class="w-full h-full block"
+  aria-hidden="true"
+>
+  <defs>
+    <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color={stroke} stop-opacity="0.35" />
+      <stop offset="100%" stop-color={stroke} stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <path d={areaPath} fill="url(#sparkFill)" />
+  <path d={linePath} fill="none" stroke={stroke} stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+  <circle cx={lastX} cy={lastY} r="3" fill={stroke} />
+  <circle cx={lastX} cy={lastY} r="6" fill={stroke} opacity="0.18" />
+</svg>

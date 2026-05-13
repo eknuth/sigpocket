@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0E1014"/>
+      <stop offset="100%" stop-color="#07080B"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#4668DC" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#4668DC" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse">
+      <path d="M 56 0 L 0 0 0 56" fill="none" stroke="#1E2129" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0E1014" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#07080B" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.6"/>
+  <rect width="1200" height="630" fill="url(#fade)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- § brand mark -->
+  <g transform="translate(80, 80)">
+    <rect width="56" height="56" rx="12" fill="#4668DC"/>
+    <text x="28" y="40" text-anchor="middle" font-family="'Geist Mono', ui-monospace, monospace" font-weight="700" font-size="36" fill="#fff">§</text>
+    <text x="76" y="38" font-family="'Geist Mono', ui-monospace, monospace" font-weight="600" font-size="22" fill="#E6EAF2">sigpocket<tspan fill="#5F6776">.com</tspan></text>
+  </g>
+
+  <!-- Status chip -->
+  <g transform="translate(80, 200)">
+    <rect width="240" height="32" rx="16" fill="#13151B" stroke="#262A35"/>
+    <circle cx="18" cy="16" r="3.5" fill="#22C55E"/>
+    <text x="34" y="22" font-family="'Geist Mono', ui-monospace, monospace" font-weight="500" font-size="13" fill="#9BA3B4">
+      v 0.0.1 · shipping to play store
+    </text>
+  </g>
+
+  <!-- Headline -->
+  <text x="80" y="320" font-family="Geist, sans-serif" font-weight="600" font-size="84" fill="#E6EAF2" letter-spacing="-2">
+    Your SigNoz,
+  </text>
+  <text x="80" y="420" font-family="Geist, sans-serif" font-weight="600" font-size="84" fill="#9BA3B4" letter-spacing="-2">
+    in your pocket<tspan fill="#4668DC">.</tspan>
+  </text>
+
+  <!-- Subline -->
+  <text x="80" y="490" font-family="Geist, sans-serif" font-weight="400" font-size="22" fill="#9BA3B4">
+    RED metrics, traces, and logs from any SigNoz instance.
+  </text>
+  <text x="80" y="522" font-family="Geist, sans-serif" font-weight="400" font-size="22" fill="#9BA3B4">
+    BYO SigNoz. Apache 2.0. No tracking.
+  </text>
+
+  <!-- Bottom RED ticker -->
+  <g transform="translate(80, 560)" font-family="'Geist Mono', ui-monospace, monospace">
+    <g>
+      <rect width="120" height="40" rx="8" fill="#13151B" stroke="#262A35"/>
+      <circle cx="14" cy="14" r="3" fill="#22C55E"/>
+      <text x="24" y="17" font-size="9" font-weight="500" fill="#5F6776" letter-spacing="1.5">RATE</text>
+      <text x="14" y="33" font-size="14" font-weight="500" fill="#E6EAF2">1,284<tspan fill="#5F6776" font-size="10"> /min</tspan></text>
+    </g>
+    <g transform="translate(130, 0)">
+      <rect width="120" height="40" rx="8" fill="#13151B" stroke="#262A35"/>
+      <circle cx="14" cy="14" r="3" fill="#F59E0B"/>
+      <text x="24" y="17" font-size="9" font-weight="500" fill="#5F6776" letter-spacing="1.5">ERR</text>
+      <text x="14" y="33" font-size="14" font-weight="500" fill="#E6EAF2">0.42<tspan fill="#5F6776" font-size="10"> %</tspan></text>
+    </g>
+    <g transform="translate(260, 0)">
+      <rect width="120" height="40" rx="8" fill="#13151B" stroke="#262A35"/>
+      <circle cx="14" cy="14" r="3" fill="#4668DC"/>
+      <text x="24" y="17" font-size="9" font-weight="500" fill="#5F6776" letter-spacing="1.5">P95</text>
+      <text x="14" y="33" font-size="14" font-weight="500" fill="#E6EAF2">184<tspan fill="#5F6776" font-size="10"> ms</tspan></text>
+    </g>
+  </g>
+
+  <!-- Phone silhouette on right -->
+  <g transform="translate(820, 110)">
+    <rect width="290" height="500" rx="40" fill="#1d2029" stroke="#2c3140"/>
+    <rect x="6" y="6" width="278" height="488" rx="34" fill="#07080B"/>
+    <rect x="120" y="20" width="54" height="20" rx="10" fill="#000"/>
+
+    <!-- Header -->
+    <text x="22" y="78" font-family="'Geist Mono', ui-monospace, monospace" font-size="9" fill="#5F6776" letter-spacing="1.5">PROD · US-EAST-1</text>
+    <text x="22" y="106" font-family="Geist, sans-serif" font-weight="600" font-size="22" fill="#E6EAF2">Services</text>
+
+    <!-- service rows -->
+    <g font-family="Geist, sans-serif" font-size="13">
+      <g transform="translate(16, 130)">
+        <rect width="258" height="42" rx="10" fill="#13151B" stroke="#1E2129"/>
+        <circle cx="18" cy="21" r="4" fill="#22C55E"/>
+        <text x="34" y="25" fill="#E6EAF2" font-weight="500">api-gateway</text>
+        <text x="190" y="20" font-family="'Geist Mono', ui-monospace, monospace" font-size="11" fill="#E6EAF2" text-anchor="end">184ms</text>
+        <text x="244" y="20" font-family="'Geist Mono', ui-monospace, monospace" font-size="10" fill="#22C55E" text-anchor="end">0.04%</text>
+      </g>
+      <g transform="translate(16, 180)">
+        <rect width="258" height="42" rx="10" fill="#13151B" stroke="#1E2129"/>
+        <circle cx="18" cy="21" r="4" fill="#F59E0B"/>
+        <text x="34" y="25" fill="#E6EAF2" font-weight="500">checkout-svc</text>
+        <text x="190" y="20" font-family="'Geist Mono', ui-monospace, monospace" font-size="11" fill="#E6EAF2" text-anchor="end">521ms</text>
+        <text x="244" y="20" font-family="'Geist Mono', ui-monospace, monospace" font-size="10" fill="#F59E0B" text-anchor="end">1.21%</text>
+      </g>
+      <g transform="translate(16, 230)">
+        <rect width="258" height="42" rx="10" fill="#13151B" stroke="#EF4444" stroke-opacity="0.5"/>
+        <circle cx="18" cy="21" r="4" fill="#EF4444"/>
+        <text x="34" y="25" fill="#E6EAF2" font-weight="500">payments-worker</text>
+        <text x="190" y="20" font-family="'Geist Mono', ui-monospace, monospace" font-size="11" fill="#EF4444" text-anchor="end">2.1s</text>
+        <text x="244" y="20" font-family="'Geist Mono', ui-monospace, monospace" font-size="10" fill="#EF4444" text-anchor="end">6.4%</text>
+      </g>
+      <g transform="translate(16, 280)">
+        <rect width="258" height="42" rx="10" fill="#13151B" stroke="#1E2129"/>
+        <circle cx="18" cy="21" r="4" fill="#22C55E"/>
+        <text x="34" y="25" fill="#E6EAF2" font-weight="500">user-service</text>
+        <text x="190" y="20" font-family="'Geist Mono', ui-monospace, monospace" font-size="11" fill="#E6EAF2" text-anchor="end">61ms</text>
+        <text x="244" y="20" font-family="'Geist Mono', ui-monospace, monospace" font-size="10" fill="#22C55E" text-anchor="end">0.01%</text>
+      </g>
+    </g>
+
+    <!-- Tab bar -->
+    <g transform="translate(14, 430)">
+      <rect width="262" height="52" rx="22" fill="#1A1D26" stroke="#262A35"/>
+      <rect x="6" y="6" width="62" height="40" rx="14" fill="#4668DC" fill-opacity="0.18"/>
+      <text x="37" y="35" font-family="Geist, sans-serif" font-size="9" fill="#7691EB" text-anchor="middle">services</text>
+      <text x="100" y="35" font-family="Geist, sans-serif" font-size="9" fill="#5F6776" text-anchor="middle">traces</text>
+      <text x="164" y="35" font-family="Geist, sans-serif" font-size="9" fill="#5F6776" text-anchor="middle">logs</text>
+      <text x="228" y="35" font-family="Geist, sans-serif" font-size="9" fill="#5F6776" text-anchor="middle">settings</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,100 @@
+---
+import Base from "../layouts/Base.astro";
+import SectionAnchor from "../components/SectionAnchor.astro";
+---
+
+<Base
+  title="SigPocket — privacy"
+  description="What SigPocket collects (nothing) and what it doesn't (everything)."
+  path="/privacy"
+>
+  <section class="relative mx-auto max-w-3xl px-5 sm:px-8 py-16 sm:py-24">
+    <SectionAnchor label="Privacy" index="full text" />
+
+    <h1 class="text-[36px] sm:text-[52px] font-semibold tracking-tight leading-[1]">
+      What we collect: nothing.
+    </h1>
+    <p class="mt-5 text-text-secondary text-[16px] leading-relaxed">
+      SigPocket is a mobile client for SigNoz. It is an open-source app (Apache 2.0)
+      that runs entirely on your device and talks directly to the SigNoz instance you configure.
+      There is no SigPocket account, no SigPocket backend, and no SigPocket-operated data pipeline.
+    </p>
+
+    <div class="mt-10 space-y-7 text-[15px] text-text-secondary leading-relaxed">
+      <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">Data the app collects about you</h2>
+        <p class="mt-2">
+          None. The developer of this app does not receive any data about you, your device, or your usage.
+          The app does not include analytics SDKs (no GA, no Segment, no PostHog, no Amplitude),
+          ad networks, or third-party tracking libraries.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">Data you enter into the app</h2>
+        <p class="mt-2">
+          To connect to SigNoz, you provide a URL and an API key. These are stored on your device using the
+          platform secure keychain (Expo SecureStore, backed by iOS Keychain Services or Android Keystore).
+          They are never transmitted to anyone other than the SigNoz instance you configured.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">Network traffic</h2>
+        <p class="mt-2">
+          The app sends HTTPS requests to one place only: the SigNoz URL you provided.
+          The data returned (services, traces, logs, metrics) is rendered on-device and not persisted
+          beyond the React Query cache, which lives in memory and is wiped on app exit.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">App-self telemetry</h2>
+        <p class="mt-2">
+          To help you debug the app's own performance, SigPocket emits OTLP-formatted traces
+          (cold starts, screen loads, SigNoz API call timings). These traces are sent to
+          <em class="text-text not-italic font-mono text-[13px] bg-surface-2 px-1.5 py-0.5 rounded-md border border-border-subtle">your</em>
+          SigNoz instance, the same one this app is monitoring. They are not sent anywhere else.
+          You can disable this in Settings.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">Push notifications (optional)</h2>
+        <p class="mt-2">
+          If you opt in to alert push notifications, SigPocket registers an Expo push token. That token
+          is sent to a Cloudflare Worker we operate, which forwards Alertmanager webhooks from your SigNoz
+          to Expo Push Service, which delivers to your device. The Worker's source is in this repository.
+          It does not store alert payloads or device tokens beyond what is required to forward the message.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">Children</h2>
+        <p class="mt-2">
+          SigPocket is a tool for software operators. It is not directed at children under 13.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">Changes</h2>
+        <p class="mt-2">
+          If this policy changes materially, the app version that introduces the change will say so in
+          its release notes, and this page will be updated.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">Contact</h2>
+        <p class="mt-2">
+          Questions or concerns: open an issue at
+          <a href="https://github.com/eknuth/sigpocket/issues" class="text-text underline underline-offset-2 decoration-border hover:decoration-brand">github.com/eknuth/sigpocket/issues</a>.
+        </p>
+      </section>
+
+      <p class="font-mono text-[12px] text-text-muted pt-6 border-t border-border-subtle">
+        last updated: 2026-05-12
+      </p>
+    </div>
+  </section>
+</Base>

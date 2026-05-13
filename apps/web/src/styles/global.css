@@ -1,0 +1,282 @@
+@import "tailwindcss";
+
+/* ─── Self-hosted Geist variable fonts ─────────────────────── */
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Variable.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─── SigPocket design tokens ──────────────────────────────── */
+/* Dark is the default. Light is opt-in via [data-theme="light"]. */
+:root {
+  --bg: #07080b;
+  --surface: #0e1014;
+  --surface-2: #13151b;
+  --surface-3: #191c24;
+  --surface-float: #1a1d26e6;
+  --border: #262a35;
+  --border-subtle: #1e2129;
+
+  --text: #e6eaf2;
+  --text-secondary: #9ba3b4;
+  --text-muted: #5f6776;
+
+  --brand: #4668dc;
+  --brand-hi: #7691eb;
+  --brand-lo: #2b46a8;
+  --brand-glow: #4668dc4d;
+  --brand-glow-soft: #4668dc22;
+
+  --accent: #f24769;
+  --accent-hi: #f56b87;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  --grid-line: #1e2129;
+  --scan-line: #ffffff05;
+
+  /* Type */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Spacing scale (8pt with 4pt sub-step) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Radii */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-2xl: 28px;
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f7f8fb;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --surface-float: #ffffffee;
+  --border: #cbd5e1;
+  --border-subtle: #e2e8f0;
+
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --brand: #4668dc;
+  --brand-hi: #2b46a8;
+  --brand-lo: #7691eb;
+  --brand-glow: #4668dc33;
+  --brand-glow-soft: #4668dc11;
+
+  --grid-line: #e2e8f0;
+  --scan-line: #0000000a;
+
+  color-scheme: light;
+}
+
+/* Map Tailwind v4 theme tokens onto our CSS variables. */
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-float: var(--surface-float);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-brand: var(--brand);
+  --color-brand-hi: var(--brand-hi);
+  --color-brand-lo: var(--brand-lo);
+  --color-accent: var(--accent);
+  --color-accent-hi: var(--accent-hi);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+}
+
+/* ─── Base reset ──────────────────────────────────────────── */
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "ss02", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--brand);
+  color: #fff;
+}
+
+* {
+  border-color: var(--border-subtle);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.font-mono,
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+  font-feature-settings: "ss02", "ss03", "cv11";
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Atmosphere: hero grid + scanline ─────────────────────── */
+.hero-grid {
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+  mask-image: radial-gradient(
+    ellipse 80% 60% at 50% 35%,
+    rgb(0 0 0 / 0.9) 30%,
+    transparent 80%
+  );
+}
+
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    var(--scan-line) 3px,
+    var(--scan-line) 4px
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.6;
+}
+
+.brand-glow {
+  box-shadow:
+    0 0 0 1px var(--brand) inset,
+    0 12px 40px -8px var(--brand-glow),
+    0 0 80px -10px var(--brand-glow);
+}
+
+.brand-glow-soft {
+  box-shadow:
+    0 0 0 1px var(--border) inset,
+    0 8px 32px -12px var(--brand-glow-soft);
+}
+
+/* ─── RED ticker pulse ────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
+}
+
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes count-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.count-in {
+  animation: count-in 0.45s ease-out both;
+}
+
+/* ─── Reveal-on-scroll ────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 480ms ease-out, transform 480ms ease-out;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Reduced motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ─── Focus rings ─────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
