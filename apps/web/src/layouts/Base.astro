@@ -196,5 +196,9 @@ const canonical = new URL(path, "https://sigpocket.com").toString();
       }, { rootMargin: "0px 0px -10% 0px", threshold: 0.05 });
       document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
     </script>
+
+    <script>
+      import "../scripts/telemetry.js";
+    </script>
   </body>
 </html>

@@ -70,6 +70,32 @@ import SectionAnchor from "../components/SectionAnchor.astro";
       </section>
 
       <section>
+        <h2 class="text-text font-semibold text-[18px] tracking-tight">This marketing site (sigpocket.com)</h2>
+        <p class="mt-2">
+          The app collects nothing. This website does collect minimal page-view analytics, because we want
+          to know whether anyone is reading the page you're on right now. Two things happen when you load
+          sigpocket.com:
+        </p>
+        <ul class="mt-2 list-disc pl-5 space-y-1.5">
+          <li>
+            Cloudflare Web Analytics records an anonymized page view. No cookies, no fingerprinting,
+            no cross-site tracking. <a href="https://www.cloudflare.com/web-analytics/" class="text-text underline underline-offset-2 decoration-border hover:decoration-brand" target="_blank" rel="noopener">How CF Web Analytics works</a>.
+          </li>
+          <li>
+            Our own Cloudflare Pages Function emits one OTLP span per visit to a SigNoz instance we operate.
+            The span contains: page URL on this site, referrer, user agent, language, timezone, viewport
+            size, time spent on page, and the CF datacenter that served the request. It does not contain
+            cookies, IP addresses, or anything that identifies you across visits. We dogfood SigNoz; this
+            is the dogfood.
+          </li>
+        </ul>
+        <p class="mt-2">
+          No data from this site is sent to any third party other than Cloudflare (our hosting provider)
+          and our own SigNoz instance. The Pages Function source is in this repository.
+        </p>
+      </section>
+
+      <section>
         <h2 class="text-text font-semibold text-[18px] tracking-tight">Children</h2>
         <p class="mt-2">
           SigPocket is a tool for software operators. It is not directed at children under 13.
@@ -93,7 +119,7 @@ import SectionAnchor from "../components/SectionAnchor.astro";
       </section>
 
       <p class="font-mono text-[12px] text-text-muted pt-6 border-t border-border-subtle">
-        last updated: 2026-05-12
+        last updated: 2026-05-14
       </p>
     </div>
   </section>
